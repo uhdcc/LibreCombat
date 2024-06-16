@@ -4,6 +4,8 @@
 #include "Character2.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Weapon.h"
+#include "Engine/AssetManager.h"
 
 ACharacter2::ACharacter2()
 {
@@ -37,6 +39,51 @@ void ACharacter2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Pressed, this, &ACharacter::Crouch, false);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Released, this, &ACharacter::UnCrouch, false);
+	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("NextWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, true);
+	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Released, this, &ACharacter2::CycleWeapon, false);
+
+#if WITH_EDITOR
+	UAssetManager& AssetManager = UAssetManager::Get();
+	AssetManager.LoadPrimaryAssetsWithType("Weapon", TArray<FName>(), FStreamableDelegate::CreateUObject(this, &ACharacter2::AllWeaponsLoaded));
+#endif
+}
+
+#if WITH_EDITOR
+void ACharacter2::AllWeaponsLoaded() {
+	UAssetManager& AssetManager = UAssetManager::Get();
+	TArray<UObject*> WeaponData;
+	AssetManager.GetPrimaryAssetObjectList("Weapon", WeaponData);
+	FActorSpawnParameters WeaponSpawnParams;
+	WeaponSpawnParams.Owner = this;
+	for(auto& i : WeaponData) {
+		auto WeaponClass = Cast<UClass>(i);
+		auto WeaponObject = GetWorld()->SpawnActor<AWeapon>(WeaponClass, WeaponSpawnParams);
+		Weapons.Add(WeaponObject);
+	}
+	SelectWeapon(0);
+
+}
+#endif
+
+void ACharacter2::CycleWeapon(bool bDirection) {
+		int NewWeaponIndex;
+		if(!bDirection) {
+			NewWeaponIndex = (CurrentWeaponIndex + 1) % Weapons.Num();
+		}
+		else {
+			NewWeaponIndex = (CurrentWeaponIndex < 1) ?
+				Weapons.Num() - 1 :
+				CurrentWeaponIndex - 1;
+		}
+		SelectWeapon(NewWeaponIndex);
+}
+
+void ACharacter2::SelectWeapon(int WeaponIndex) {
+	if(Weapons.IsValidIndex(WeaponIndex)) {
+		Weapons[CurrentWeaponIndex]->Unequip();
+		CurrentWeaponIndex = WeaponIndex;
+		Weapons[CurrentWeaponIndex]->Equip();
+	}
 }
 
 void ACharacter2::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) {
