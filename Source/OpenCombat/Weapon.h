@@ -13,7 +13,10 @@ class OPENCOMBAT_API AWeapon : public AActor
 	
 public:	
 	AWeapon();
-	virtual void PostInitializeComponents() override;
+	virtual void BeginPlay() override;
+
+	bool bIsEquipped;
+	void Shoot(bool bButtonWasPressed);
 
 	void Equip();
 

@@ -2,6 +2,7 @@
 
 
 #include "Weapon.h"
+#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
 {
@@ -25,16 +26,20 @@ AWeapon::AWeapon()
 	FirstPersonMesh->bOnlyOwnerSee = true;
 	FirstPersonMesh->CastShadow = false;
 	FirstPersonMesh->SetIsReplicated(true);
+
+	bIsEquipped = false;
 }
 
-void AWeapon::PostInitializeComponents() {
-	Super::PostInitializeComponents();
+void AWeapon::BeginPlay() {
+	Super::BeginPlay();
 	if(GetOwner()) {
 		if(auto PawnOwner = Cast<APawn>(GetOwner())) {
 			SetInstigator(PawnOwner);
 		}
 		if(GetOwner()->InputComponent) {
 			InputComponent = GetOwner()->InputComponent;
+			InputComponent->BindAction<TDelegate<void(bool)>>("Shoot", IE_Pressed, this, &AWeapon::Shoot, true);
+			InputComponent->BindAction<TDelegate<void(bool)>>("Shoot", IE_Released, this, &AWeapon::Shoot, false);
 		}
 		if(!GetOwner()->GetInstigatorController()) {
 			AttachToActor(GetOwner(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -47,11 +52,36 @@ void AWeapon::PostInitializeComponents() {
 	Unequip();
 }
 
+void AWeapon::Shoot(bool bButtonWasPressed) {
+	if(bIsEquipped) {
+		if(bButtonWasPressed) {
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Pressed");
+			if(auto World = GetWorld()) {
+				FHitResult Hit;
+				const FVector ShotEndPoint = GetActorLocation() + (GetActorForwardVector() * 100000.f);
+				World->LineTraceSingleByChannel(Hit, GetActorLocation(), ShotEndPoint, ECC_Visibility);
+				if(Hit.IsValidBlockingHit()) {
+					DrawDebugLine(World, GetActorLocation(), Hit.ImpactPoint, FColor::Red, false, 0.5f, 0U, 2.f);
+					DrawDebugPoint(World, Hit.ImpactPoint, 20.f, FColor::Green, false, 0.5f);
+				}
+				else {
+					DrawDebugLine(World, GetActorLocation(), ShotEndPoint, FColor::Red, false, 0.5f, 0U, 2.f);
+				}
+			}
+		}
+		else {
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Released");
+		}
+	}
+}
+
 void AWeapon::Equip() {
 	ThirdPersonMesh->SetVisibility(true);
 	FirstPersonMesh->SetVisibility(true);
+	bIsEquipped = true;
 }
 void AWeapon::Unequip() {
 	ThirdPersonMesh->SetVisibility(false);
 	FirstPersonMesh->SetVisibility(false);
+	bIsEquipped = false;
 }
