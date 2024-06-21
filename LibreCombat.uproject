@@ -6,7 +6,7 @@
 	"DisableEnginePluginsByDefault": true,
 	"Modules": [
 		{
-			"Name": "OpenCombat",
+			"Name": "LibreCombat",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [

@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class OPENCOMBAT_API APlayerController2 : public APlayerController
+class LIBRECOMBAT_API APlayerController2 : public APlayerController
 {
 	GENERATED_BODY()
 public:

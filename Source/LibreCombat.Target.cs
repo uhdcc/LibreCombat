@@ -3,12 +3,12 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class OpenCombatTarget : TargetRules
+public class LibreCombatTarget : TargetRules
 {
-	public OpenCombatTarget( TargetInfo Target) : base(Target)
+	public LibreCombatTarget( TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "OpenCombat" } );
+		ExtraModuleNames.AddRange( new string[] { "LibreCombat" } );
 	}
 }

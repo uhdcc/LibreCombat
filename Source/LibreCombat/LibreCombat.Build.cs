@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class OpenCombat : ModuleRules
+public class LibreCombat : ModuleRules
 {
-	public OpenCombat(ReadOnlyTargetRules Target) : base(Target)
+	public LibreCombat(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	

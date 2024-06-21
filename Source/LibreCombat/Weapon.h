@@ -7,7 +7,7 @@
 #include "Weapon.generated.h"
 
 UCLASS()
-class OPENCOMBAT_API AWeapon : public AActor
+class LIBRECOMBAT_API AWeapon : public AActor
 {
 	GENERATED_BODY()
 	
