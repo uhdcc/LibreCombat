@@ -9,7 +9,7 @@
 class AWeapon;
 
 UCLASS()
-class OPENCOMBAT_API ACharacter2 : public ACharacter
+class LIBRECOMBAT_API ACharacter2 : public ACharacter
 {
 	GENERATED_BODY()
 public:

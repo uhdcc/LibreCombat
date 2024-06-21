@@ -7,13 +7,16 @@
 #include "Weapon.generated.h"
 
 UCLASS()
-class OPENCOMBAT_API AWeapon : public AActor
+class LIBRECOMBAT_API AWeapon : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	AWeapon();
-	virtual void PostInitializeComponents() override;
+	virtual void BeginPlay() override;
+
+	bool bIsEquipped;
+	void Shoot(bool bButtonWasPressed);
 
 	void Equip();
 
