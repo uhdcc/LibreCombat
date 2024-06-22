@@ -3,6 +3,7 @@
 
 #include "Weapon.h"
 #include "DrawDebugHelpers.h"
+#include "DamageComponent.h"
 
 AWeapon::AWeapon()
 {
@@ -28,6 +29,8 @@ AWeapon::AWeapon()
 	FirstPersonMesh->SetIsReplicated(true);
 
 	bIsEquipped = false;
+	PhysicsForce = 10000.f;
+	Damage = 20.f;
 }
 
 void AWeapon::BeginPlay() {
@@ -55,22 +58,40 @@ void AWeapon::BeginPlay() {
 void AWeapon::Shoot(bool bButtonWasPressed) {
 	if(bIsEquipped) {
 		if(bButtonWasPressed) {
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Pressed");
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Pressed");
 			if(auto World = GetWorld()) {
 				FHitResult Hit;
 				const FVector ShotEndPoint = GetActorLocation() + (GetActorForwardVector() * 100000.f);
 				World->LineTraceSingleByChannel(Hit, GetActorLocation(), ShotEndPoint, ECC_Visibility);
-				if(Hit.IsValidBlockingHit()) {
-					DrawDebugLine(World, GetActorLocation(), Hit.ImpactPoint, FColor::Red, false, 0.5f, 0U, 2.f);
+				DrawDebugLine(
+					World, GetActorLocation() - FVector(0.f, 0.f, 10.f), 
+					Hit.IsValidBlockingHit() ? Hit.ImpactPoint : Hit.TraceEnd,
+					FColor::Red, false, 0.5f, 0U, 2.f);
+				if (Hit.IsValidBlockingHit()) {
 					DrawDebugPoint(World, Hit.ImpactPoint, 20.f, FColor::Green, false, 0.5f);
-				}
-				else {
-					DrawDebugLine(World, GetActorLocation(), ShotEndPoint, FColor::Red, false, 0.5f, 0U, 2.f);
+					if (Hit.GetComponent()->IsSimulatingPhysics(Hit.BoneName)) {
+						Hit.GetComponent()->AddImpulseAtLocation(
+							(Hit.ImpactPoint - GetActorLocation()).GetSafeNormal2D() * PhysicsForce,
+							Hit.ImpactPoint,
+							Hit.BoneName
+						);
+					}
+					if (Hit.GetActor() && Hit.GetActor()->CanBeDamaged()) {
+						Hit.GetActor()->TakeDamage(10.f, FDamageEvent(), GetInstigatorController(), this);
+					}
+					if (Hit.GetActor()) {
+						if (auto VictimDamageComponent = Hit.GetActor()->FindComponentByClass<UDamageComponent>()) {
+							VictimDamageComponent->ReceiveDamage(Damage);
+						}
+					}
+					else {
+						DrawDebugLine(World, GetActorLocation(), ShotEndPoint, FColor::Red, false, 0.5f, 0U, 2.f);
+					}
 				}
 			}
 		}
 		else {
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Released");
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Released");
 		}
 	}
 }

@@ -26,4 +26,11 @@ public:
 	USkeletalMeshComponent* FirstPersonMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* ThirdPersonMesh;
+
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float PhysicsForce;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage;
 };

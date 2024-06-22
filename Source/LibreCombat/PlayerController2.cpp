@@ -9,6 +9,7 @@ APlayerController2::APlayerController2() {
 void APlayerController2::BeginPlay() {
 	Super::BeginPlay();
 	SetMouseSensitivity(800.0, 16.5);
+	PlayerCameraManager->DefaultFOV = 114.5f;
 }
 
 void APlayerController2::SetupInputComponent() {
