@@ -63,7 +63,6 @@ void ACharacter2::AllWeaponsLoaded() {
 		Weapons.Add(WeaponObject);
 	}
 	SelectWeapon(0);
-
 }
 #endif
 

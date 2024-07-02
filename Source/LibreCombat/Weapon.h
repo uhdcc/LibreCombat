@@ -4,9 +4,39 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include "Weapon.generated.h"
 
-class UNiagaraSystem;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FButtonEvent, UButtonComponent*, Button);
+
+
+UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
+class UButtonComponent : public UActorComponent {
+	GENERATED_BODY()
+public: 
+	UButtonComponent();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CooldownDuration;
+	FTimerHandle CooldownTimer;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsCoolingDown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bButtonIsHeld;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsEquipped;
+
+	void BindInput(UInputComponent& InputComponent);
+
+	UFUNCTION(BlueprintCallable)
+	void Action(bool bButtonWasPressed);
+	UFUNCTION(BlueprintCallable)
+	void StartCooldown();
+
+	UPROPERTY(BlueprintAssignable)
+	FButtonEvent	ButtonEvent;
+
+};
 
 UCLASS()
 class LIBRECOMBAT_API AWeapon : public AActor
@@ -17,30 +47,23 @@ public:
 	AWeapon();
 	virtual void BeginPlay() override;
 
-	bool bIsEquipped;
-	void Shoot(bool bButtonWasPressed);
-
-	void Equip();
-
-	void Unequip();
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* FirstPersonMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* ThirdPersonMesh;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimationAsset* ShootAnimation;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float PhysicsForce;
+	TArray<UButtonComponent*> Buttons;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Damage;
+	UButtonComponent* PrimaryFire;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UNiagaraSystem* BulletTrail;
+	UButtonComponent* SecondaryFire;
+
+	UFUNCTION(BlueprintCallable)
+	void Equip();
+	UFUNCTION(BlueprintCallable)
+	void Unequip();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundBase* ShotSound;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundBase* HitSound;
+	bool bIsEquipped;
 
 };

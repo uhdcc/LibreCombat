@@ -30,12 +30,50 @@ AWeapon::AWeapon()
 	FirstPersonMesh->CastShadow = false;
 	FirstPersonMesh->SetIsReplicated(true);
 
-	bIsEquipped = false;
-	PhysicsForce = 10000.f;
-	Damage = 20.f;
-	ShootAnimation = nullptr;
-}
+	PrimaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("PrimaryFire"));
+	//Buttons.Add(PrimaryFire);
+	SecondaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("SecondaryFire"));
+	//Buttons.Add(SecondaryFire);
 
+
+	bIsEquipped = false;
+}
+UButtonComponent::UButtonComponent() {
+	CooldownDuration = 0.3f;
+	CooldownTimer = FTimerHandle();
+	bIsCoolingDown = false;
+	bButtonIsHeld = false;
+	bIsEquipped = false;
+}
+void UButtonComponent::BindInput(UInputComponent& InputComponent) {
+	InputComponent.BindAction<TDelegate<void(bool)>>(GetFName(), IE_Pressed, this, &UButtonComponent::Action, true);
+	InputComponent.BindAction<TDelegate<void(bool)>>(GetFName(), IE_Released, this, &UButtonComponent::Action, false);
+}
+void UButtonComponent::StartCooldown() {
+	bIsCoolingDown = false;
+	if (bButtonIsHeld) {
+		Action(true);
+	}
+}
+void UButtonComponent::Action(bool bButtonWasPressed) {
+	bButtonIsHeld = bButtonWasPressed;
+	if (bIsEquipped && !bIsCoolingDown) {
+		if (auto World = GetWorld()) {
+			if (ButtonEvent.IsBound()) {
+				ButtonEvent.Broadcast(this);
+			}
+			if (CooldownDuration > 0.f) {
+				bIsCoolingDown = true;
+				World->GetTimerManager().SetTimer(
+					CooldownTimer,
+					this, &UButtonComponent::StartCooldown,
+					CooldownDuration,
+					false
+				);
+			}
+		}
+	}
+}
 void AWeapon::BeginPlay() {
 	Super::BeginPlay();
 	if(GetOwner()) {
@@ -44,8 +82,11 @@ void AWeapon::BeginPlay() {
 		}
 		if(GetOwner()->InputComponent) {
 			InputComponent = GetOwner()->InputComponent;
-			InputComponent->BindAction<TDelegate<void(bool)>>("Shoot", IE_Pressed, this, &AWeapon::Shoot, true);
-			InputComponent->BindAction<TDelegate<void(bool)>>("Shoot", IE_Released, this, &AWeapon::Shoot, false);
+
+			GetComponents<UButtonComponent>(Buttons);
+			for (auto i : Buttons) {
+				i->BindInput(*InputComponent);
+			}
 		}
 		if(!GetOwner()->GetInstigatorController()) {
 			AttachToActor(GetOwner(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -58,67 +99,22 @@ void AWeapon::BeginPlay() {
 	Unequip();
 }
 
-void AWeapon::Shoot(bool bButtonWasPressed) {
-	if(bIsEquipped) {
-		if(bButtonWasPressed) {
-			if(auto World = GetWorld()) {
-				FHitResult Hit;
-				const FVector ShotEndPoint = GetActorLocation() + (GetActorForwardVector() * 100000.f);
-				World->LineTraceSingleByChannel(Hit, GetActorLocation(), ShotEndPoint, ECC_Visibility);				
-
-				auto BeamStart = FirstPersonMesh->GetSocketLocation("Muzzle");
-				auto NewBeam = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-					this,
-					BulletTrail,
-					BeamStart,
-					FRotator::ZeroRotator,
-					FVector(1.f),
-					true,
-					false,
-					ENCPoolMethod::AutoRelease
-				);
-				if (NewBeam) {
-					NewBeam->SetVectorParameter("BeamEnd", Hit.IsValidBlockingHit() ? Hit.ImpactPoint : Hit.TraceEnd);
-					NewBeam->ActivateSystem();
-				}
-
-				UGameplayStatics::PlaySoundAtLocation(
-					this,
-					ShotSound,
-					GetActorLocation()
-				);
-
-				if (Hit.IsValidBlockingHit()) {
-					if (Hit.GetComponent()->IsSimulatingPhysics(Hit.BoneName)) {
-						Hit.GetComponent()->AddImpulseAtLocation(
-							(Hit.ImpactPoint - GetActorLocation()).GetSafeNormal2D() * PhysicsForce,
-							Hit.ImpactPoint,
-							Hit.BoneName
-						);
-					}
-					if (Hit.GetActor() && Hit.GetActor()->CanBeDamaged()) {
-						Hit.GetActor()->TakeDamage(10.f, FDamageEvent(), GetInstigatorController(), this);
-					}
-					if (Hit.GetActor()) {
-						if (auto VictimDamageComponent = Hit.GetActor()->FindComponentByClass<UDamageComponent>()) {
-							VictimDamageComponent->ReceiveDamage(Damage);
-							UGameplayStatics::PlaySound2D(this, HitSound);
-						}
-					}
-				}
-				FirstPersonMesh->PlayAnimation(ShootAnimation, false);
-			}
-		}
-	}
-}
-
 void AWeapon::Equip() {
 	ThirdPersonMesh->SetVisibility(true);
 	FirstPersonMesh->SetVisibility(true);
 	bIsEquipped = true;
+	for (auto i : Buttons) {
+		i->bIsEquipped = true;
+	}
 }
 void AWeapon::Unequip() {
 	ThirdPersonMesh->SetVisibility(false);
 	FirstPersonMesh->SetVisibility(false);
 	bIsEquipped = false;
+	for (auto i : Buttons) {
+		i->bIsEquipped = false;
+	}
 }
+
+
+

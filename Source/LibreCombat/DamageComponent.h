@@ -21,6 +21,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health;
 
+	UFUNCTION()
 	void OnTakeAnyDamage(
 		AActor* DamagedActor, 
 		float Damage, 
