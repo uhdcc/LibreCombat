@@ -40,7 +40,9 @@ void ACharacter2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Pressed, this, &ACharacter::Crouch, false);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Released, this, &ACharacter::UnCrouch, false);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("NextWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, true);
-	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Released, this, &ACharacter2::CycleWeapon, false);
+	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, false);
+	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ACharacter2::ThrowGrenade);
+
 
 #if WITH_EDITOR
 	UAssetManager& AssetManager = UAssetManager::Get();
@@ -83,6 +85,23 @@ void ACharacter2::SelectWeapon(int WeaponIndex) {
 		Weapons[CurrentWeaponIndex]->Unequip();
 		CurrentWeaponIndex = WeaponIndex;
 		Weapons[CurrentWeaponIndex]->Equip();
+	}
+}
+
+void ACharacter2::ThrowGrenade()
+{
+	if (auto World = GetWorld()) {
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.Owner = this;
+		SpawnParameters.Instigator = this;
+		
+		FTransform ThrowTransform(
+			GetViewRotation(),
+			GetPawnViewLocation(),
+			GetActorScale3D()
+		);
+
+		World->SpawnActor<AActor>(GrenadeClass, ThrowTransform, SpawnParameters);
 	}
 }
 

@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Weapon.generated.h"
 
+class UNiagaraSystem;
+
 UCLASS()
 class LIBRECOMBAT_API AWeapon : public AActor
 {
@@ -26,11 +28,19 @@ public:
 	USkeletalMeshComponent* FirstPersonMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* ThirdPersonMesh;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UAnimationAsset* ShootAnimation;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float PhysicsForce;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Damage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UNiagaraSystem* BulletTrail;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* ShotSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* HitSound;
+
 };

@@ -27,7 +27,10 @@ public:
 	void CycleWeapon(bool bDirection);
 	void SelectWeapon(int WeaponIndex);
 
+	void ThrowGrenade();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UClass* GrenadeClass;
 
 
 

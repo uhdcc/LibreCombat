@@ -12,11 +12,11 @@ public class LibreCombat : ModuleRules
 			"Core", 
 			"CoreUObject", 
 			"Engine", 
-			"InputCore"
+			"InputCore",
+			"Niagara"		
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
-			"Niagara"		
 		});
 
 		// Uncomment if you are using Slate UI

@@ -10,7 +10,8 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine"
+				"Engine",
+				"Niagara"
 			]
 		}
 	],
@@ -65,6 +66,10 @@
 		},
 		{
 			"Name": "NiagaraExtras",
+			"Enabled": true
+		},
+		{
+			"Name": "ControlRig",
 			"Enabled": true
 		}
 	],

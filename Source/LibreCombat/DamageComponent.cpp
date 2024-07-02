@@ -2,17 +2,12 @@
 
 
 #include "DamageComponent.h"
-#include "D:\Apps\Epic Games\UE_4.27\Engine\Plugins\FX\Niagara\Source\Niagara\Public\NiagaraFunctionLibrary.h"
+#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 
-// Sets default values for this component's properties
 UDamageComponent::UDamageComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 
 	InitialHealth = 100.f;
 	Health = 0.f;
@@ -48,8 +43,6 @@ void UDamageComponent::ReceiveDamage(float DamageAmount)
 			);
 		}
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Test");
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, LexToString(DamageAmount));
 }
 
 void UDamageComponent::Respawn()
@@ -61,12 +54,10 @@ void UDamageComponent::Respawn()
 	GetOwner()->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
 }
 
-// Called when the game starts
 void UDamageComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
 	Health = InitialHealth;
 
 	if (GetOwner()) {
@@ -82,11 +73,9 @@ void UDamageComponent::BeginPlay()
 }
 
 
-// Called every frame
 void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
 }
 

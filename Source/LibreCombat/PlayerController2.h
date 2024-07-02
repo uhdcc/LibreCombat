@@ -18,6 +18,8 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void SetPawn(APawn* InPawn) override;
+	bool bInputsHaveBeenBinded;
 
 	void MoveForward(float Input);
 	void MoveRight(float Input);

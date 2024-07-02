@@ -2,8 +2,10 @@
 
 
 #include "Weapon.h"
-#include "DrawDebugHelpers.h"
 #include "DamageComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AWeapon::AWeapon()
 {
@@ -31,6 +33,7 @@ AWeapon::AWeapon()
 	bIsEquipped = false;
 	PhysicsForce = 10000.f;
 	Damage = 20.f;
+	ShootAnimation = nullptr;
 }
 
 void AWeapon::BeginPlay() {
@@ -58,17 +61,34 @@ void AWeapon::BeginPlay() {
 void AWeapon::Shoot(bool bButtonWasPressed) {
 	if(bIsEquipped) {
 		if(bButtonWasPressed) {
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Pressed");
 			if(auto World = GetWorld()) {
 				FHitResult Hit;
 				const FVector ShotEndPoint = GetActorLocation() + (GetActorForwardVector() * 100000.f);
-				World->LineTraceSingleByChannel(Hit, GetActorLocation(), ShotEndPoint, ECC_Visibility);
-				DrawDebugLine(
-					World, GetActorLocation() - FVector(0.f, 0.f, 10.f), 
-					Hit.IsValidBlockingHit() ? Hit.ImpactPoint : Hit.TraceEnd,
-					FColor::Red, false, 0.5f, 0U, 2.f);
+				World->LineTraceSingleByChannel(Hit, GetActorLocation(), ShotEndPoint, ECC_Visibility);				
+
+				auto BeamStart = FirstPersonMesh->GetSocketLocation("Muzzle");
+				auto NewBeam = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					this,
+					BulletTrail,
+					BeamStart,
+					FRotator::ZeroRotator,
+					FVector(1.f),
+					true,
+					false,
+					ENCPoolMethod::AutoRelease
+				);
+				if (NewBeam) {
+					NewBeam->SetVectorParameter("BeamEnd", Hit.IsValidBlockingHit() ? Hit.ImpactPoint : Hit.TraceEnd);
+					NewBeam->ActivateSystem();
+				}
+
+				UGameplayStatics::PlaySoundAtLocation(
+					this,
+					ShotSound,
+					GetActorLocation()
+				);
+
 				if (Hit.IsValidBlockingHit()) {
-					DrawDebugPoint(World, Hit.ImpactPoint, 20.f, FColor::Green, false, 0.5f);
 					if (Hit.GetComponent()->IsSimulatingPhysics(Hit.BoneName)) {
 						Hit.GetComponent()->AddImpulseAtLocation(
 							(Hit.ImpactPoint - GetActorLocation()).GetSafeNormal2D() * PhysicsForce,
@@ -82,16 +102,12 @@ void AWeapon::Shoot(bool bButtonWasPressed) {
 					if (Hit.GetActor()) {
 						if (auto VictimDamageComponent = Hit.GetActor()->FindComponentByClass<UDamageComponent>()) {
 							VictimDamageComponent->ReceiveDamage(Damage);
+							UGameplayStatics::PlaySound2D(this, HitSound);
 						}
 					}
-					else {
-						DrawDebugLine(World, GetActorLocation(), ShotEndPoint, FColor::Red, false, 0.5f, 0U, 2.f);
-					}
 				}
+				FirstPersonMesh->PlayAnimation(ShootAnimation, false);
 			}
-		}
-		else {
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Released");
 		}
 	}
 }
