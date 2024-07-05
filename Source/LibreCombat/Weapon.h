@@ -35,7 +35,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FButtonEvent	ButtonEvent;
-
 };
 
 UCLASS()
@@ -51,6 +50,9 @@ public:
 	USkeletalMeshComponent* FirstPersonMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* ThirdPersonMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<AActor*> IgnoredActors;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<UButtonComponent*> Buttons;
@@ -59,10 +61,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UButtonComponent* SecondaryFire;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void Equip();
-	UFUNCTION(BlueprintCallable)
+	void Equip_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void Unequip();
+	void Unequip_Implementation();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsEquipped;
 

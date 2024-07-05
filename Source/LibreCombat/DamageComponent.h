@@ -21,15 +21,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health;
 
-	UFUNCTION()
-	void OnTakeAnyDamage(
-		AActor* DamagedActor, 
-		float Damage, 
-		const class UDamageType* DamageType, 
-		class AController* InstigatedBy, 
-		AActor* DamageCauser
-	);
-
 	UFUNCTION(BlueprintCallable)
 	void ReceiveDamage(float DamageAmount);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -7,16 +7,29 @@
 #include "Character2.generated.h"
 
 class AWeapon;
+class UDamageComponent;
+class UCharacterMovementComponent2;
 
 UCLASS()
 class LIBRECOMBAT_API ACharacter2 : public ACharacter
 {
 	GENERATED_BODY()
 public:
-	ACharacter2();
+	ACharacter2(const FObjectInitializer& ObjectInitializer);
+	virtual void BeginPlay() override;
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void RecalculateBaseEyeHeight() override;
+	UCharacterMovementComponent2* CharacterMovement2;
 
+	virtual void Crouch2(bool bButtonWasPressed);
+	bool bCrouchButtonIsHeld;
+	bool bCrouchingHack;
+	float CurrentCapsuleHeight;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UDamageComponent* DamageComponent;
 
 
 #if WITH_EDITOR

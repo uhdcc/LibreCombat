@@ -4,9 +4,10 @@
 #include "DamageComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
-UDamageComponent::UDamageComponent()
-{
+UDamageComponent::UDamageComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
 
 	InitialHealth = 100.f;
@@ -14,26 +15,18 @@ UDamageComponent::UDamageComponent()
 	DeathEffect = nullptr;
 	RespawnTimer = FTimerHandle();
 }
-
-
-void UDamageComponent::OnTakeAnyDamage(
-	AActor* DamagedActor, 
-	float Damage, 
-	const UDamageType* DamageType, 
-	AController* InstigatedBy, 
-	AActor* DamageCauser){
-
-}
-
-void UDamageComponent::ReceiveDamage(float DamageAmount)
-{
+void UDamageComponent::ReceiveDamage(float DamageAmount) {
 	Health -= DamageAmount;
 	if (Health <= 0.f) {
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
 		GetOwner()->SetActorEnableCollision(false);
 		GetOwner()->SetActorTickEnabled(false);
 		GetOwner()->SetActorHiddenInGame(true);
-
+		if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
+			CharacterMovement->StopActiveMovement();
+			CharacterMovement->StopMovementImmediately();
+			CharacterMovement->DisableMovement();
+		}
 		if (auto World = GetWorld()) {
 			World->GetTimerManager().SetTimer(
 				RespawnTimer,
@@ -44,26 +37,19 @@ void UDamageComponent::ReceiveDamage(float DamageAmount)
 		}
 	}
 }
-
-void UDamageComponent::Respawn()
-{
+void UDamageComponent::Respawn() {
 	Health = InitialHealth;
 	GetOwner()->SetActorEnableCollision(true);
 	GetOwner()->SetActorTickEnabled(true);
 	GetOwner()->SetActorHiddenInGame(false);
 	GetOwner()->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
-}
-
-void UDamageComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	Health = InitialHealth;
-
-	if (GetOwner()) {
-		GetOwner()->OnTakeAnyDamage.AddDynamic(this, &UDamageComponent::OnTakeAnyDamage);
+	if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
+		CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
-
+}
+void UDamageComponent::BeginPlay() {
+	Super::BeginPlay();
+	Health = InitialHealth;
 	if (!DeathEffect) {
 		DeathEffect = LoadObject<UNiagaraSystem>(
 			nullptr,			
@@ -71,10 +57,7 @@ void UDamageComponent::BeginPlay()
 		);
 	}
 }
-
-
-void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
+void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 }

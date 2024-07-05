@@ -10,6 +10,7 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 
+
 UCLASS()
 class LIBRECOMBAT_API AProjectile : public AActor {
 	GENERATED_BODY()	
@@ -27,6 +28,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USoundBase* ExplosionSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* HitSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UNiagaraSystem* ExplosionEffect;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ExplosionRadius;
@@ -39,6 +42,9 @@ public:
 	void Bounce(const FHitResult& ImpactResult, const FVector& ImpactVelocity);
 	UFUNCTION()
 	void Stopped(const FHitResult& ImpactResult);
+	//UFUNCTION()
+	//void Collided(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 
 	void Explode();
 

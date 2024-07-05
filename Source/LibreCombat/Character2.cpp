@@ -4,11 +4,15 @@
 #include "Character2.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "DamageComponent.h"
+#include "CharacterMovementComponent2.h"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "Weapon.h"
 #include "Engine/AssetManager.h"
 
-ACharacter2::ACharacter2()
-{
+ACharacter2::ACharacter2(const FObjectInitializer& ObjectInitializer) 
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterMovementComponent2>(ACharacter::CharacterMovementComponentName)) {
 	GetCharacterMovement()->bIgnoreBaseRotation = true;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->bAlwaysCheckFloor = false;
@@ -30,26 +34,65 @@ ACharacter2::ACharacter2()
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
 	GetMesh()->bOwnerNoSee = true;
 
-	isHoldingJumpButton = false;
-}
+	DamageComponent = CreateDefaultSubobject<UDamageComponent>(TEXT("DamageComponent"));
 
+	isHoldingJumpButton = false;
+
+	bCrouchButtonIsHeld = false;
+	bCrouchingHack = false;
+	CurrentCapsuleHeight = 0.f;
+}
+void ACharacter2::BeginPlay() {
+	Super::BeginPlay();
+	CurrentCapsuleHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	CharacterMovement2 = Cast<UCharacterMovementComponent2>(GetCharacterMovement());
+	RecalculateBaseEyeHeight();
+
+}
 void ACharacter2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Pressed, this, &ACharacter::Crouch, false);
-	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Released, this, &ACharacter::UnCrouch, false);
+	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Pressed, this, &ACharacter2::Crouch2, true);
+	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Released, this, &ACharacter2::Crouch2, false);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("NextWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, true);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, false);
 	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ACharacter2::ThrowGrenade);
 
-
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if WITH_EDITOR
 	UAssetManager& AssetManager = UAssetManager::Get();
 	AssetManager.LoadPrimaryAssetsWithType("Weapon", TArray<FName>(), FStreamableDelegate::CreateUObject(this, &ACharacter2::AllWeaponsLoaded));
 #endif
 }
-
+void ACharacter2::Tick(float DeltaTime) {
+	if (bCrouchingHack) {
+		CurrentCapsuleHeight += (DeltaTime * 400.f) * (bCrouchButtonIsHeld ? -1.f : 1.f);
+		if (CurrentCapsuleHeight < GetCharacterMovement()->CrouchedHalfHeight) {
+			CurrentCapsuleHeight = GetCharacterMovement()->CrouchedHalfHeight;
+			bCrouchingHack = false;
+		}
+		else if (CurrentCapsuleHeight > 88.f) {
+			CurrentCapsuleHeight = 88.f;
+			CharacterMovement2->bCrouchHack2 = false;
+			bCrouchingHack = false;
+		}
+		GetCapsuleComponent()->SetCapsuleHalfHeight(CurrentCapsuleHeight);
+		RecalculateBaseEyeHeight();
+		GetCharacterMovement()->UpdateFloorFromAdjustment();
+	}
+	Super::Tick(DeltaTime);
+}
+void ACharacter2::RecalculateBaseEyeHeight() {
+	BaseEyeHeight = CurrentCapsuleHeight - 18.f;
+}
+void ACharacter2::Crouch2(bool bButtonWasPressed) {
+	bCrouchButtonIsHeld = bButtonWasPressed;
+	if (bCrouchButtonIsHeld) {
+		CharacterMovement2->bCrouchHack2 = true;
+	}
+	bCrouchingHack = true;
+}
 #if WITH_EDITOR
 void ACharacter2::AllWeaponsLoaded() {
 	UAssetManager& AssetManager = UAssetManager::Get();
@@ -65,7 +108,6 @@ void ACharacter2::AllWeaponsLoaded() {
 	SelectWeapon(0);
 }
 #endif
-
 void ACharacter2::CycleWeapon(bool bDirection) {
 		int NewWeaponIndex;
 		if(!bDirection) {

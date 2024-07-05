@@ -31,10 +31,7 @@ AWeapon::AWeapon()
 	FirstPersonMesh->SetIsReplicated(true);
 
 	PrimaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("PrimaryFire"));
-	//Buttons.Add(PrimaryFire);
 	SecondaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("SecondaryFire"));
-	//Buttons.Add(SecondaryFire);
-
 
 	bIsEquipped = false;
 }
@@ -77,6 +74,8 @@ void UButtonComponent::Action(bool bButtonWasPressed) {
 void AWeapon::BeginPlay() {
 	Super::BeginPlay();
 	if(GetOwner()) {
+		GetOwner()->GetAttachedActors(IgnoredActors);
+		IgnoredActors.Add(GetOwner());
 		if(auto PawnOwner = Cast<APawn>(GetOwner())) {
 			SetInstigator(PawnOwner);
 		}
@@ -99,15 +98,18 @@ void AWeapon::BeginPlay() {
 	Unequip();
 }
 
-void AWeapon::Equip() {
+void AWeapon::Equip_Implementation() {
 	ThirdPersonMesh->SetVisibility(true);
 	FirstPersonMesh->SetVisibility(true);
 	bIsEquipped = true;
 	for (auto i : Buttons) {
 		i->bIsEquipped = true;
+		if (i->bButtonIsHeld) {
+			i->Action(true);
+		}
 	}
 }
-void AWeapon::Unequip() {
+void AWeapon::Unequip_Implementation() {
 	ThirdPersonMesh->SetVisibility(false);
 	FirstPersonMesh->SetVisibility(false);
 	bIsEquipped = false;

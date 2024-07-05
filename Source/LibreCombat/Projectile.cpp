@@ -40,7 +40,10 @@ void AProjectile::Bounce(const FHitResult& ImpactResult, const FVector& ImpactVe
 	);
 }
 void AProjectile::Stopped(const FHitResult& ImpactResult) {
-	if (auto World = GetWorld()) {
+	if (!Movement->bShouldBounce) {
+		Explode();
+	}
+	else if (auto World = GetWorld()) {
 		World->GetTimerManager().SetTimer(
 			*new FTimerHandle(),
 			this, &AProjectile::Explode,
@@ -72,6 +75,8 @@ void AProjectile::Explode() {
 			}
 			if (auto VictimDamageComponent = i.Actor->FindComponentByClass<UDamageComponent>()) {
 				VictimDamageComponent->ReceiveDamage(ExplosionDamage * NormalizedDistance);
+				UGameplayStatics::PlaySound2D(this, HitSound);
+
 			}
 		}
 	}
@@ -95,10 +100,26 @@ void AProjectile::BeginPlay() {
 		Collision->IgnoreActorWhenMoving(GetOwner(), true);
 		TArray < UPrimitiveComponent*> OwnerPrimitives;
 		GetOwner()->GetComponents<UPrimitiveComponent>(OwnerPrimitives);
-
+		if (GetOwner()->GetOwner()) {
+			Collision->IgnoreActorWhenMoving(GetOwner()->GetOwner(), true);
+			TArray < UPrimitiveComponent*> OwnerPrimitives2;
+			GetOwner()->GetOwner()->GetComponents<UPrimitiveComponent>(OwnerPrimitives2);
+			OwnerPrimitives.Append(OwnerPrimitives2);
+		}
 		for (auto& i : OwnerPrimitives) {
 			i->IgnoreActorWhenMoving(this, true);
 		}
+	}
+	SetActorHiddenInGame(true);
+	if (auto World = GetWorld()) {
+		World->GetTimerManager().SetTimer(
+			*new FTimerHandle(),
+			[=]() {
+				SetActorHiddenInGame(false);
+			},
+			Movement->InitialSpeed / 3000.f * 0.05f,
+			false
+			);
 	}
 }
 

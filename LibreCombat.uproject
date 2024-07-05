@@ -11,7 +11,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"Niagara"
+				"Niagara",
+				"AIModule"
 			]
 		}
 	],
@@ -70,6 +71,10 @@
 		},
 		{
 			"Name": "ControlRig",
+			"Enabled": true
+		},
+		{
+			"Name": "ModelingToolsEditorMode",
 			"Enabled": true
 		}
 	],
