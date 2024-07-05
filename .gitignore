@@ -2,7 +2,8 @@ Binaries
 DerivedDataCache
 Intermediate
 Saved
-Content\Developers
+Content/Developers
+Config/DefaultInput.ini
 .vscode
 .vs
 *.VC.db
