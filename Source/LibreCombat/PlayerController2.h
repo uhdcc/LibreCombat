@@ -6,8 +6,6 @@
 #include "GameFramework/PlayerController.h"
 #include "PlayerController2.generated.h"
 
-
-
 UCLASS()
 class LIBRECOMBAT_API APlayerController2 : public APlayerController
 {
@@ -26,7 +24,6 @@ public:
 	void MoveRight(float Input);
 
 	void SetMouseSensitivity(double MouseDpi, double CentimetersPer360);
-
 	
 	bool bIsZooming;
 	float ZoomTimer;

@@ -5,13 +5,13 @@
 #include "GameFramework/Character.h"
 
 UCharacterMovementComponent2::UCharacterMovementComponent2() {
-	bCrouchHack2 = false;
+	bUseCrouchWalkingSpeed = false;
 }
 float UCharacterMovementComponent2::GetMaxSpeed() const {
 	switch (MovementMode) {
 	case MOVE_Walking:
 	case MOVE_NavWalking:
-		return bCrouchHack2 ? MaxWalkSpeedCrouched : MaxWalkSpeed;
+		return bUseCrouchWalkingSpeed ? MaxWalkSpeedCrouched : MaxWalkSpeed;
 	case MOVE_Falling:
 		return MaxWalkSpeed;
 	case MOVE_Swimming:

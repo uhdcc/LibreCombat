@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Character2.generated.h"
 
 class AWeapon;
@@ -25,21 +26,16 @@ public:
 
 	virtual void Crouch2(bool bButtonWasPressed);
 	bool bCrouchButtonIsHeld;
-	bool bCrouchingHack;
+	bool bCrouchIsTicking;
 	float CurrentCapsuleHeight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UDamageComponent* DamageComponent;
 
-
-#if WITH_EDITOR
-	void AllWeaponsLoaded();
-#endif
 	TArray<AWeapon*> Weapons;
 	int CurrentWeaponIndex;
 	void CycleWeapon(bool bDirection);
 	void SelectWeapon(int WeaponIndex);
-
 	void ThrowGrenade();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -52,4 +48,7 @@ public:
 	virtual void Jump() override;
 	virtual void StopJumping() override;
 	bool isHoldingJumpButton;
+
+	UFUNCTION()
+	void MoveToRandomPoint(EPathFollowingResult::Type MovementResult);
 };
