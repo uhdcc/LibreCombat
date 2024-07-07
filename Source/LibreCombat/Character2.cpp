@@ -6,10 +6,15 @@
 #include "Components/CapsuleComponent.h"
 #include "DamageComponent.h"
 #include "CharacterMovementComponent2.h"
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "Weapon.h"
-#include "Engine/AssetManager.h"
+
+//todo decouple ai and character
+#include "AIController.h"
+#include "NavigationSystem.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Blueprint\AIAsyncTaskBlueprintProxy.h"
+
+
 
 ACharacter2::ACharacter2(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterMovementComponent2>(ACharacter::CharacterMovementComponentName)) {
@@ -30,16 +35,19 @@ ACharacter2::ACharacter2(const FObjectInitializer& ObjectInitializer)
 	GetCharacterMovement()->AirControlBoostVelocityThreshold = 400.f;
 	GetCharacterMovement()->FallingLateralFriction = 0.4f;
 	GetCharacterMovement()->MaxStepHeight = 35.f;
+	GetCharacterMovement()->CrouchedHalfHeight = 60.f;
+	GetCharacterMovement()->Mass = 500.f;
 
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
 	GetMesh()->bOwnerNoSee = true;
+	GetMesh()->SetCollisionProfileName("BlockAllDynamic");
 
 	DamageComponent = CreateDefaultSubobject<UDamageComponent>(TEXT("DamageComponent"));
 
 	isHoldingJumpButton = false;
 
 	bCrouchButtonIsHeld = false;
-	bCrouchingHack = false;
+	bCrouchIsTicking = false;
 	CurrentCapsuleHeight = 0.f;
 }
 void ACharacter2::BeginPlay() {
@@ -47,35 +55,47 @@ void ACharacter2::BeginPlay() {
 	CurrentCapsuleHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
 	CharacterMovement2 = Cast<UCharacterMovementComponent2>(GetCharacterMovement());
 	RecalculateBaseEyeHeight();
-
+	if (GetController()) {
+		if (Cast<AAIController>(GetController())) {
+			MoveToRandomPoint(EPathFollowingResult::Success);
+		}
+	}
 }
-void ACharacter2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
+void ACharacter2::MoveToRandomPoint(EPathFollowingResult::Type MovementResult) {
+	FVector RandomPoint;
+	UNavigationSystemV1::K2_GetRandomReachablePointInRadius(
+		this,
+		GetActorLocation(),
+		RandomPoint,
+		3000.f
+		);
+	auto AiTask = UAIBlueprintHelperLibrary::CreateMoveToProxyObject(
+		this,
+		this,
+		RandomPoint
+	);
+	AiTask->OnFail.AddDynamic(this, &ACharacter2::MoveToRandomPoint);
+	AiTask->OnSuccess.AddDynamic(this, &ACharacter2::MoveToRandomPoint);
+}
+void ACharacter2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Pressed, this, &ACharacter2::Crouch2, true);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("Crouch", IE_Released, this, &ACharacter2::Crouch2, false);
+	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ACharacter2::ThrowGrenade);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("NextWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, true);
 	PlayerInputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Pressed, this, &ACharacter2::CycleWeapon, false);
-	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ACharacter2::ThrowGrenade);
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#if WITH_EDITOR
-	UAssetManager& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAssetsWithType("Weapon", TArray<FName>(), FStreamableDelegate::CreateUObject(this, &ACharacter2::AllWeaponsLoaded));
-#endif
 }
 void ACharacter2::Tick(float DeltaTime) {
-	if (bCrouchingHack) {
+	if (bCrouchIsTicking) {
 		CurrentCapsuleHeight += (DeltaTime * 400.f) * (bCrouchButtonIsHeld ? -1.f : 1.f);
 		if (CurrentCapsuleHeight < GetCharacterMovement()->CrouchedHalfHeight) {
 			CurrentCapsuleHeight = GetCharacterMovement()->CrouchedHalfHeight;
-			bCrouchingHack = false;
+			bCrouchIsTicking = false;
 		}
 		else if (CurrentCapsuleHeight > 88.f) {
 			CurrentCapsuleHeight = 88.f;
-			CharacterMovement2->bCrouchHack2 = false;
-			bCrouchingHack = false;
+			bCrouchIsTicking = false;
 		}
 		GetCapsuleComponent()->SetCapsuleHalfHeight(CurrentCapsuleHeight);
 		RecalculateBaseEyeHeight();
@@ -88,26 +108,10 @@ void ACharacter2::RecalculateBaseEyeHeight() {
 }
 void ACharacter2::Crouch2(bool bButtonWasPressed) {
 	bCrouchButtonIsHeld = bButtonWasPressed;
-	if (bCrouchButtonIsHeld) {
-		CharacterMovement2->bCrouchHack2 = true;
-	}
-	bCrouchingHack = true;
+	CharacterMovement2->bUseCrouchWalkingSpeed = bButtonWasPressed;
+	bCrouchIsTicking = true;
 }
-#if WITH_EDITOR
-void ACharacter2::AllWeaponsLoaded() {
-	UAssetManager& AssetManager = UAssetManager::Get();
-	TArray<UObject*> WeaponData;
-	AssetManager.GetPrimaryAssetObjectList("Weapon", WeaponData);
-	FActorSpawnParameters WeaponSpawnParams;
-	WeaponSpawnParams.Owner = this;
-	for(auto& i : WeaponData) {
-		auto WeaponClass = Cast<UClass>(i);
-		auto WeaponObject = GetWorld()->SpawnActor<AWeapon>(WeaponClass, WeaponSpawnParams);
-		Weapons.Add(WeaponObject);
-	}
-	SelectWeapon(0);
-}
-#endif
+
 void ACharacter2::CycleWeapon(bool bDirection) {
 		int NewWeaponIndex;
 		if(!bDirection) {
@@ -120,7 +124,6 @@ void ACharacter2::CycleWeapon(bool bDirection) {
 		}
 		SelectWeapon(NewWeaponIndex);
 }
-
 void ACharacter2::SelectWeapon(int WeaponIndex) {
 	if(Weapons.IsValidIndex(WeaponIndex)) {
 		Weapons[CurrentWeaponIndex]->Unequip();
@@ -128,7 +131,6 @@ void ACharacter2::SelectWeapon(int WeaponIndex) {
 		Weapons[CurrentWeaponIndex]->Equip();
 	}
 }
-
 void ACharacter2::ThrowGrenade()
 {
 	if (auto World = GetWorld()) {
@@ -145,7 +147,6 @@ void ACharacter2::ThrowGrenade()
 		World->SpawnActor<AActor>(GrenadeClass, ThrowTransform, SpawnParameters);
 	}
 }
-
 void ACharacter2::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 	if(isHoldingJumpButton) {
@@ -162,3 +163,4 @@ void ACharacter2::StopJumping() {
 	isHoldingJumpButton = false;
 	Super::StopJumping();
 }
+

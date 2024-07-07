@@ -5,10 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/ActorComponent.h"
+#include "WeaponStructs.h"
 #include "Weapon.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FButtonEvent, UButtonComponent*, Button);
+class AHUD2;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FButtonEvent, UButtonComponent*, Button);
 
 UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
 class UButtonComponent : public UActorComponent {
@@ -70,5 +72,11 @@ public:
 	void Unequip_Implementation();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsEquipped;
+
+	// todo decouple hud and weapon
+	UPROPERTY()
+	AHUD2* Hud2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FWeaponHudParameters HudParameters;
 
 };

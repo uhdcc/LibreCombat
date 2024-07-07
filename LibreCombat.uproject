@@ -12,7 +12,9 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"Niagara",
-				"AIModule"
+				"AIModule",
+				"Slate",
+				"SlateCore"
 			]
 		}
 	],

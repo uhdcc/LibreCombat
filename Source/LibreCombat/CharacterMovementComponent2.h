@@ -16,6 +16,6 @@ class LIBRECOMBAT_API UCharacterMovementComponent2 : public UCharacterMovementCo
 public:
 	UCharacterMovementComponent2();
 	virtual float GetMaxSpeed() const override;
-	bool bCrouchHack2;
+	bool bUseCrouchWalkingSpeed;
 	
 };
