@@ -11,14 +11,13 @@
 #include "DamageComponent.h"
 
 AProjectile::AProjectile() {
-	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	RootComponent = Collision;
-	Collision->SetCollisionProfileName("BlockAllDynamic");
+	ProjectileCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ProjectileCollision"));
+	RootComponent = ProjectileCollision;
+	ProjectileCollision->SetCollisionProfileName("BlockAllDynamic");
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	Model->SetupAttachment(RootComponent);
 	Model->SetCollisionProfileName("NoCollision");
-
 
 	Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
 	Movement->OnProjectileBounce.AddDynamic(this, &AProjectile::Bounce);
@@ -53,34 +52,45 @@ void AProjectile::Stopped(const FHitResult& ImpactResult) {
 	}
 }
 void AProjectile::Explode() {
+	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Red, false, 0.5f, 0U, 1.f);
 	TArray<FOverlapResult> Overlaps;
-	GetWorld()->OverlapMultiByObjectType(
+	GetWorld()->OverlapMultiByChannel(
 		Overlaps,
 		GetActorLocation(),
 		FQuat::Identity,
-		FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllObjects),
+		ECC_GameTraceChannel1,
 		FCollisionShape::MakeSphere(ExplosionRadius)
 	);
 	for (auto& i : Overlaps) {
 		auto NormalizedDistance = (i.Component->GetComponentLocation() - GetActorLocation()).Size() / ExplosionRadius;
 		NormalizedDistance = fminf(NormalizedDistance, 1.f);
 		NormalizedDistance = (1.f - NormalizedDistance);
-		auto Impulse = ((i.Component->GetComponentLocation() - GetActorLocation()).GetSafeNormal() + FVector(0.f, 0.f, 0.1f)) * ExplosionForce * NormalizedDistance;
-		if (i.Component->IsAnySimulatingPhysics()) {
-			i.Component->AddImpulse(Impulse);
-		}
+		auto Impulse = ((i.Component->GetComponentLocation() - GetActorLocation()).GetSafeNormal()) * ExplosionForce * NormalizedDistance;
 		if (i.Actor.IsValid()) {
+			if (GetOwner() && i.GetActor() != GetOwner()->GetOwner() && i.Actor != GetOwner()) {
+				if (auto VictimDamageComponent = i.Actor->FindComponentByClass<UDamageComponent>()) {
+					FDamageParameters DamageParams;
+					DamageParams.Damage = ExplosionDamage * NormalizedDistance;
+					DamageParams.bBleedthrough = true;
+					VictimDamageComponent->ReceiveDamage(DamageParams);
+					UGameplayStatics::PlaySound2D(this, HitSound);
+				}
+			}
 			if (auto CharacterMovement = i.Actor->FindComponentByClass<UCharacterMovementComponent>()) {
+				FVector Eyes;
+				FRotator fefe;
+				i.Actor->GetActorEyesViewPoint(Eyes, fefe);
+				Impulse = ((Eyes - GetActorLocation()).GetSafeNormal()) * ExplosionForce * NormalizedDistance;
 				CharacterMovement->AddImpulse(Impulse);
 			}
-			if (auto VictimDamageComponent = i.Actor->FindComponentByClass<UDamageComponent>()) {
-				VictimDamageComponent->ReceiveDamage(ExplosionDamage * NormalizedDistance);
-				UGameplayStatics::PlaySound2D(this, HitSound);
-
-			}
+		}
+		if (i.GetComponent()->IsSimulatingPhysics()) {
+			i.GetComponent()->AddImpulseAtLocation(
+				Impulse,
+				i.GetComponent()->GetComponentLocation()
+			);
 		}
 	}
-
 	UGameplayStatics::PlaySoundAtLocation(
 		this,
 		ExplosionSound,
@@ -91,17 +101,17 @@ void AProjectile::Explode() {
 		ExplosionEffect, 
 		GetActorLocation()
 	);
-	ConditionalBeginDestroy();
+	Destroy();
 }
 void AProjectile::BeginPlay() {
 	Super::BeginPlay();
 	
 	if (GetOwner()) {
-		Collision->IgnoreActorWhenMoving(GetOwner(), true);
+		ProjectileCollision->IgnoreActorWhenMoving(GetOwner(), true);
 		TArray < UPrimitiveComponent*> OwnerPrimitives;
 		GetOwner()->GetComponents<UPrimitiveComponent>(OwnerPrimitives);
 		if (GetOwner()->GetOwner()) {
-			Collision->IgnoreActorWhenMoving(GetOwner()->GetOwner(), true);
+			ProjectileCollision->IgnoreActorWhenMoving(GetOwner()->GetOwner(), true);
 			TArray < UPrimitiveComponent*> OwnerPrimitives2;
 			GetOwner()->GetOwner()->GetComponents<UPrimitiveComponent>(OwnerPrimitives2);
 			OwnerPrimitives.Append(OwnerPrimitives2);

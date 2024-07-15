@@ -2,10 +2,8 @@
 
 
 #include "Weapon.h"
-#include "DamageComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "HUD2.h"
 
 AWeapon::AWeapon()
@@ -72,48 +70,6 @@ void UButtonComponent::Action(bool bButtonWasPressed) {
 		}
 	}
 }
-void AWeapon::BeginPlay() {
-	if(GetOwner()) {
-		if(auto PawnOwner = Cast<APawn>(GetOwner())) {
-			SetInstigator(PawnOwner);
-		}
-		if(GetOwner()->GetInstigatorController()) {
-			if(auto PlayerController = Cast<APlayerController>(GetOwner()->GetInstigatorController())) {
-				if(GetOwner()->InputComponent) {
-					InputComponent = GetOwner()->InputComponent;
-					GetComponents<UButtonComponent>(Buttons);
-					for (auto i : Buttons) {
-						i->BindInput(*InputComponent);
-					}
-				}
-				auto PCM = PlayerController->PlayerCameraManager->GetRootComponent();
-				AttachToComponent(PCM, FAttachmentTransformRules::KeepRelativeTransform);
-				if (auto Hud = Cast<AHUD2>(PlayerController->GetHUD())) {
-					auto NewName = GetFName().ToString();
-					NewName = NewName.Left(NewName.Find("_"));
-					HudParameters.WeaponName = FText::FromString(NewName);
-					if (!HudParameters.ReticleTexture) {
-						HudParameters.ReticleTexture = LoadObject<UTexture2D>(
-							nullptr,
-							TEXT("Texture2D'/Game/Weapons/CircleReticle.CircleReticle'")
-							//Texture2D'/Engine/EditorLandscapeResources/WhiteSquareTexture.WhiteSquareTexture'
-						);
-					}
-					Hud->AddWeaponToList(HudParameters);
-					Hud2 = Hud;
-				}
-			}
-		}
-		else {
-			AttachToActor(GetOwner(), FAttachmentTransformRules::KeepRelativeTransform);
-		}
-		GetOwner()->GetAttachedActors(IgnoredActors);
-		IgnoredActors.Add(GetOwner());
-	}
-	Unequip();
-	Super::BeginPlay();
-}
-
 void AWeapon::Equip_Implementation() {
 	ThirdPersonMesh->SetVisibility(true);
 	FirstPersonMesh->SetVisibility(true);

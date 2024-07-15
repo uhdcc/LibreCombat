@@ -46,7 +46,6 @@ class LIBRECOMBAT_API AWeapon : public AActor
 	
 public:	
 	AWeapon();
-	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* FirstPersonMesh;
@@ -54,7 +53,6 @@ public:
 	USkeletalMeshComponent* ThirdPersonMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> IgnoredActors;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<UButtonComponent*> Buttons;
@@ -78,5 +76,4 @@ public:
 	AHUD2* Hud2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FWeaponHudParameters HudParameters;
-
 };

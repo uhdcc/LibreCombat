@@ -18,7 +18,7 @@ public:
 	AProjectile();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USphereComponent* Collision;
+	USphereComponent* ProjectileCollision;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* Model;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -42,8 +42,6 @@ public:
 	void Bounce(const FHitResult& ImpactResult, const FVector& ImpactVelocity);
 	UFUNCTION()
 	void Stopped(const FHitResult& ImpactResult);
-	//UFUNCTION()
-	//void Collided(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 
 	void Explode();

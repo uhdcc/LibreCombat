@@ -1,0 +1,11 @@
+health shield ui color
+force SetInitialHealthShield for damagecomponent and hud2 and calc ui colors for initial health
+ragdoll on death
+
+uniform ui font colors, borders, etc
+weapon switch animations, timings
+ammo
+taking damage needs to stop the current shield recharging
+assault rifle needs to start accurate, then get less accurate as long as you hold the button
+give more descriptive names for projectile components
+shotgun is still inconsistant up close

@@ -6,12 +6,8 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameStateBase2.generated.h"
 
-/**
- * 
- */
 UCLASS()
-class LIBRECOMBAT_API AGameStateBase2 : public AGameStateBase
-{
+class LIBRECOMBAT_API AGameStateBase2 : public AGameStateBase {
 	GENERATED_BODY()
 public:
 	virtual void HandleBeginPlay() override;
@@ -20,6 +16,5 @@ public:
 #if WITH_EDITOR
 	void AllWeaponsLoaded();
 #endif
-
-	
+	void AllPickupsLoaded();
 };

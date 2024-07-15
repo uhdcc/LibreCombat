@@ -5,11 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "CharacterMovementComponent2.h"
 #include "Character2.generated.h"
 
-class AWeapon;
+class UWeaponHolder;
 class UDamageComponent;
-class UCharacterMovementComponent2;
 
 UCLASS()
 class LIBRECOMBAT_API ACharacter2 : public ACharacter
@@ -18,37 +18,22 @@ class LIBRECOMBAT_API ACharacter2 : public ACharacter
 public:
 	ACharacter2(const FObjectInitializer& ObjectInitializer);
 	virtual void BeginPlay() override;
-
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void RecalculateBaseEyeHeight() override;
+
+	UFUNCTION(BlueprintCallable)
+	void Ragdoll();
+	UFUNCTION(BlueprintCallable)
+	void ReverseRagdoll();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UCharacterMovementComponent2* CharacterMovement2;
-
-	virtual void Crouch2(bool bButtonWasPressed);
-	bool bCrouchButtonIsHeld;
-	bool bCrouchIsTicking;
-	float CurrentCapsuleHeight;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UDamageComponent* DamageComponent;
-
-	TArray<AWeapon*> Weapons;
-	int CurrentWeaponIndex;
-	void CycleWeapon(bool bDirection);
-	void SelectWeapon(int WeaponIndex);
-	void ThrowGrenade();
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UClass* GrenadeClass;
-
-
-
-	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
-
-	virtual void Jump() override;
-	virtual void StopJumping() override;
-	bool isHoldingJumpButton;
+	UWeaponHolder* WeaponHolder;
 
 	UFUNCTION()
 	void MoveToRandomPoint(EPathFollowingResult::Type MovementResult);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bDontMove;
 };

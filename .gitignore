@@ -5,6 +5,7 @@ Saved
 Content/Developers
 Config/DefaultInput.ini
 Packaged
+Build
 .vscode
 .vs
 *.VC.db
@@ -15,3 +16,5 @@ Packaged
 *.suo
 *.xcodeproj
 *.xcworkspace
+/Build
+/Build/WindowsNoEditor

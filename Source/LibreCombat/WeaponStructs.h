@@ -6,9 +6,25 @@ class AWeapon;
 class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
+struct FDamageParameters {
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bWasHeadshot;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bBleedthrough;
+
+	FDamageParameters() {
+		Damage = 0.f;
+		bWasHeadshot = false;
+		bBleedthrough =false;
+	}
+};
+
+USTRUCT(BlueprintType)
 struct FWeaponHudParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText WeaponName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -26,7 +42,6 @@ public:
 USTRUCT(BlueprintType)
 struct FWeaponSequence {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AWeapon* Weapon;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -43,7 +58,6 @@ public:
 USTRUCT(BlueprintType)
 struct FHitscanParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AActor* Owner;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -72,40 +86,32 @@ public:
 USTRUCT(BlueprintType)
 struct FCurvedHitscanParameters : public FHitscanParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Angle;
 
 	FCurvedHitscanParameters() {
 		Angle = 0.9999f;
-		Owner = nullptr;
-		PhysicsForce = 60000.f;
-		Damage = 34.f;
-		IgnoredActors = TArray<AActor*>();
 	}
 };
 USTRUCT(BlueprintType)
 struct FProjectileSpawnParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	AActor* Owner;
+	AActor* ProjectileOwner;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> Class;
+	TSubclassOf<AActor> ProjectileClass;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USoundBase* HitSound;
 
 	FProjectileSpawnParameters() {
-		Owner = nullptr;
-		Class = nullptr;
+		ProjectileOwner = nullptr;
+		ProjectileClass = nullptr;
 		HitSound = nullptr;
-
 	}
 };
 USTRUCT(BlueprintType)
 struct FShotgunPatternParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Angle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -122,15 +128,10 @@ public:
 USTRUCT(BlueprintType)
 struct FHitscanShotgunParameters : public FHitscanParameters {
 	GENERATED_BODY()
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FShotgunPatternParameters Pattern;
 
 	FHitscanShotgunParameters() {
 		Pattern = FShotgunPatternParameters();
-		Owner = nullptr;
-		PhysicsForce = 60000.f;
-		Damage = 34.f;
-		IgnoredActors = TArray<AActor*>();
 	}
 };
