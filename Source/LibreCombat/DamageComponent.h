@@ -51,6 +51,8 @@ public:
 	bool bActorIsDead;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bActorIsImmortal;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bPostDeathHasBeenTicked;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float InitialShield;
@@ -81,7 +83,7 @@ public:
 	float GetTimestamp();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	AHUD2* Hud2;
+	AHUD2* HUD2;
 
 	UFUNCTION(BlueprintCallable)
 	void SetHealth(float NewHealth);

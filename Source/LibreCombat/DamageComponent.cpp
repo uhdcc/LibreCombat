@@ -17,6 +17,7 @@ UDamageComponent::UDamageComponent() {
 	Health = 0.f;
 	bActorIsDead = false;
 	bActorIsImmortal = false;
+	bPostDeathHasBeenTicked = false;
 	InitialShield = 100.f;
 	Shield = 0.f;
 	bShieldIsBroken = false;
@@ -29,6 +30,7 @@ UDamageComponent::UDamageComponent() {
 	CurrentRecharge = FRechargeParameters();
 }
 void UDamageComponent::ReceiveDamage(const FDamageParameters& Parameters) {
+	if (bActorIsDead) return;
 	float LocalDamage = Parameters.Damage;
 	float Difference;
 LOOP:
@@ -73,9 +75,40 @@ LOOP:
 		RechargeParams.RechargeTimestamp = GetTimestamp() + RechargeParams.RechargeDelay;
 		StartRecharging(RechargeParams);
 	}
-	if (bActorIsDead) {
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
+}
+void UDamageComponent::Respawn() {
+	SetHealth(InitialHealth);
+	SetShield(InitialShield);
+	bShieldIsBroken = false;
+	bActorIsDead = false;
+	bPostDeathHasBeenTicked = false;
+	GetOwner()->SetActorEnableCollision(true);
+	GetOwner()->SetActorTickEnabled(true);
+	GetOwner()->SetActorHiddenInGame(false);
+	GetOwner()->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+	if (auto Character2 = Cast<ACharacter2>(GetOwner())) {
+		Character2->ReverseRagdoll();
+	}
+	if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
+		CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+}
+void UDamageComponent::BeginPlay() {
+	Super::BeginPlay();
+	if (GetOwner() && GetOwner()->GetInstigatorController()) {
+		if (auto PlayerController = Cast<APlayerController>(GetOwner()->GetInstigatorController())) {
+			HUD2 = Cast<AHUD2>(PlayerController->GetHUD());
+		}
+	}
+	if (HUD2) HUD2->InitialHealth = InitialHealth;
+	if (HUD2) HUD2->InitialShield = InitialShield;
+	SetHealth(InitialHealth);
+	SetShield(InitialShield);
+}
+void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
+	if (bActorIsDead && !bPostDeathHasBeenTicked) {
 		StopRecharging();
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
 		GetOwner()->SetActorEnableCollision(false);
 		GetOwner()->SetActorTickEnabled(false);
 		GetOwner()->SetActorHiddenInGame(true);
@@ -97,38 +130,9 @@ LOOP:
 				false
 			);
 		}
+		bPostDeathHasBeenTicked = true;
 	}
-}
-void UDamageComponent::Respawn() {
-	SetHealth(InitialHealth);
-	SetShield(InitialShield);
-	bShieldIsBroken = false;
-	bActorIsDead = false;
-	GetOwner()->SetActorEnableCollision(true);
-	GetOwner()->SetActorTickEnabled(true);
-	GetOwner()->SetActorHiddenInGame(false);
-	GetOwner()->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
-	if (auto Character2 = Cast<ACharacter2>(GetOwner())) {
-		Character2->ReverseRagdoll();
-	}
-	if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
-		CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking);
-	}
-}
-void UDamageComponent::BeginPlay() {
-	Super::BeginPlay();
-	if (GetOwner() && GetOwner()->GetInstigatorController()) {
-		if (auto PlayerController = Cast<APlayerController>(GetOwner()->GetInstigatorController())) {
-			Hud2 = Cast<AHUD2>(PlayerController->GetHUD());
-		}
-	}
-	if (Hud2) Hud2->InitialHealth = InitialHealth;
-	if (Hud2) Hud2->InitialShield = InitialShield;
-	SetHealth(InitialHealth);
-	SetShield(InitialShield);
-}
-void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
-	if (bShieldIsRecharging) {
+	else if (bShieldIsRecharging) {
 		ElapsedRechargeTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds() - CurrentRecharge.RechargeTimestamp;
 		if (ElapsedRechargeTime > 0) {
 			SetShield(RechargeStartingShield + ElapsedRechargeTime * CurrentRecharge.RechargeRate);
@@ -163,11 +167,11 @@ float UDamageComponent::GetTimestamp() {
 }
 void UDamageComponent::SetHealth(float NewHealth) {
 	Health = NewHealth;
-	if (Hud2) Hud2->SetHealth(NewHealth);
+	if (HUD2) HUD2->SetHealth(NewHealth);
 }
 void UDamageComponent::SetShield(float NewShield) {
 	Shield = NewShield;
-	if (Hud2) Hud2->SetShield(NewShield);
+	if (HUD2) HUD2->SetShield(NewShield);
 }
 
 float UDamageComponent::GetHealth() {

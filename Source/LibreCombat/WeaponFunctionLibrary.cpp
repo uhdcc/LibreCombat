@@ -14,6 +14,7 @@
 #include "Components/MeshComponent.h"
 #include "WeaponHolder.h"
 #include "HUD2.h"
+#include "Character2.h"
 
 #include "DrawDebugHelpers.h"
 AWeapon* UWeaponFunctionLibrary::GiveWeapon(TSubclassOf<AWeapon> WeaponClass, AActor* WeaponOwner) {
@@ -37,13 +38,12 @@ AWeapon* UWeaponFunctionLibrary::GiveWeapon(TSubclassOf<AWeapon> WeaponClass, AA
 						i->BindInput(*NewWeapon->InputComponent);
 					}
 				}
-				// attach
-				auto PCM = PlayerController->PlayerCameraManager->GetRootComponent();
-				NewWeapon->AttachToComponent(PCM, FAttachmentTransformRules::KeepRelativeTransform);
 				// hud
 				if (auto Hud = Cast<AHUD2>(PlayerController->GetHUD())) {
 					auto NewName = NewWeapon->GetFName().ToString();
 					NewName = NewName.Left(NewName.Find("_"));
+					// todo why is my weapon keeping a reference to itself, there's got to be a better way to do this. and it already has reference to hud
+					NewWeapon->HudParameters.Weapon = NewWeapon;
 					NewWeapon->HudParameters.WeaponName = FText::FromString(NewName);
 					if (!NewWeapon->HudParameters.ReticleTexture) {
 						NewWeapon->HudParameters.ReticleTexture = LoadObject<UTexture2D>(
@@ -52,9 +52,16 @@ AWeapon* UWeaponFunctionLibrary::GiveWeapon(TSubclassOf<AWeapon> WeaponClass, AA
 						);
 					}
 					Hud->AddWeaponToList(NewWeapon->HudParameters);
-					NewWeapon->Hud2 = Hud;
+					NewWeapon->HUD2 = Hud;
 				}
 			}
+		}
+		if (auto OwningCharacter2 = Cast<ACharacter2>(WeaponOwner)) {
+			NewWeapon->AttachToComponent(OwningCharacter2->Eyes, FAttachmentTransformRules::KeepRelativeTransform);
+			//NewWeapon->FirstPersonMesh->AttachToComponent(
+			//	OwningCharacter2->FirstPersonMesh, 
+			//	FAttachmentTransformRules::KeepRelativeTransform, "ik_hand_gun"
+			//);
 		}
 		else {
 			NewWeapon->AttachToActor(WeaponOwner, FAttachmentTransformRules::KeepRelativeTransform);
@@ -74,8 +81,8 @@ AWeapon* UWeaponFunctionLibrary::GiveWeapon(TSubclassOf<AWeapon> WeaponClass, AA
 void UWeaponFunctionLibrary::TakeWeapon(AWeapon* Weapon) {
 	Weapon->Unequip();
 	Weapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
-	if (Weapon->Hud2) {
-		Weapon->Hud2->RemoveWeaponFromList(Weapon->HudParameters);
+	if (Weapon->HUD2) {
+		Weapon->HUD2->RemoveWeaponFromList(Weapon->HudParameters);
 	}
 	if (Weapon->GetOwner()) {
 		if (auto WeaponHolder = Weapon->GetOwner()->FindComponentByClass<UWeaponHolder>()) {
@@ -211,19 +218,19 @@ void UWeaponFunctionLibrary::HandleHitscan(const FHitResult& Hit, const FHitscan
 		DecalComp->SetLifeSpan(5.f);
 		if (Hit.GetComponent()->IsSimulatingPhysics(Hit.BoneName)) {
 			Hit.GetComponent()->AddImpulseAtLocation(
-				(Hit.ImpactPoint - HitParameters.Owner->GetActorLocation()).GetSafeNormal2D() * HitParameters.PhysicsForce,
+				(Hit.ImpactPoint - HitParameters.Owner->GetActorLocation()).GetSafeNormal() * HitParameters.PhysicsForce,
 				Hit.ImpactPoint,
 				Hit.BoneName
 			);
 		}
 	}
 	FVector BeamStart;
-	if (auto OwningWeapon = Cast<AWeapon>(HitParameters.Owner)) {
-		BeamStart = OwningWeapon->FirstPersonMesh->GetSocketLocation("Muzzle");
-	}
-	else {
+	//if (auto OwningWeapon = Cast<AWeapon>(HitParameters.Owner)) {
+	//	BeamStart = OwningWeapon->FirstPersonMesh->GetSocketLocation("Muzzle");
+	//}
+	//else {
 		BeamStart = HitParameters.Owner->GetActorLocation();
-	}
+//	}
 	auto NewBeam = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		HitParameters.Owner,
 		HitParameters.BulletTrail,
@@ -293,7 +300,15 @@ void UWeaponFunctionLibrary::FinishWeaponSequence(const FWeaponSequence& WeaponS
 			WeaponSequence.WeaponSound,
 			WeaponSequence.Weapon->GetActorLocation()
 		);
-		WeaponSequence.Weapon->FirstPersonMesh->PlayAnimation(WeaponSequence.Animation, false);
+		//WeaponSequence.Weapon->FirstPersonMesh->PlayAnimation(WeaponSequence.WeaponAnimation, false);
+		//if (WeaponSequence.Weapon->GetOwner()) {
+		//	if (auto OwningCharacter2 = Cast<ACharacter2>(WeaponSequence.Weapon->GetOwner())) {
+		//		OwningCharacter2->FirstPersonMesh->PlayAnimation(WeaponSequence.FirstPersonArmsAnimation, false);
+		//	}
+		//}
+		if (WeaponSequence.AmmoUsed > 0.f) {
+			WeaponSequence.Weapon->SubtractAmmo(WeaponSequence.AmmoUsed);
+		}
 	}
 }
 FHitResult UWeaponFunctionLibrary::HitscanShotgun(const FHitscanShotgunParameters& HitParameters) {

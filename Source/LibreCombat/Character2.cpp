@@ -23,6 +23,22 @@ ACharacter2::ACharacter2(const FObjectInitializer& ObjectInitializer)
 	GetMesh()->bOwnerNoSee = true;
 	GetMesh()->SetCollisionProfileName("BlockAllDynamic");
 
+	Eyes = CreateDefaultSubobject<USceneComponent>(TEXT("Eyes"));
+	Eyes->SetupAttachment(RootComponent);
+
+	//FirstPersonMesh = CreateOptionalDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
+	//FirstPersonMesh->AlwaysLoadOnClient = true;
+	//FirstPersonMesh->AlwaysLoadOnServer = true;
+	//FirstPersonMesh->bOnlyOwnerSee = true;
+	//FirstPersonMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
+	//FirstPersonMesh->bCastDynamicShadow = false;
+	//FirstPersonMesh->bAffectDynamicIndirectLighting = false;
+	//FirstPersonMesh->PrimaryComponentTick.TickGroup = TG_PrePhysics;
+	//FirstPersonMesh->SetupAttachment(Eyes);
+	//FirstPersonMesh->SetCollisionProfileName("NoCollision");
+	//FirstPersonMesh->SetGenerateOverlapEvents(false);
+	//FirstPersonMesh->SetCanEverAffectNavigation(false);
+
 	DamageComponent = CreateDefaultSubobject<UDamageComponent>(TEXT("DamageComponent"));
 	WeaponHolder = CreateDefaultSubobject<UWeaponHolder>(TEXT("WeaponHolder"));
 
@@ -53,15 +69,26 @@ void ACharacter2::MoveToRandomPoint(EPathFollowingResult::Type MovementResult) {
 	AiTask->OnSuccess.AddDynamic(this, &ACharacter2::MoveToRandomPoint);
 }
 void ACharacter2::RecalculateBaseEyeHeight() {
+	Eyes->SetRelativeLocation(FVector(0.f, 0.f, CharacterMovement2->CurrentCapsuleHeight - 20.f));
 	BaseEyeHeight = CharacterMovement2->CurrentCapsuleHeight - 20.f;
 }
+void ACharacter2::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) {
+	OutResult.Location = Eyes->GetComponentLocation();
+	OutResult.Rotation = Eyes->GetComponentRotation();
+}
+void ACharacter2::FaceRotation(FRotator NewControlRotation, float DeltaTime) {
+	SetActorRotation(FRotator(0.f, NewControlRotation.Yaw, 0.f));
+	Eyes->SetRelativeRotation(FRotator(NewControlRotation.Pitch, 0.f, 0.f));
+}
 void ACharacter2::Ragdoll() {
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+	GetMesh()->SetCollisionProfileName(TEXT("PhysicsActor"));
 	GetMesh()->SetAllBodiesSimulatePhysics(true);
 }
 void ACharacter2::ReverseRagdoll() {
 	GetMesh()->SetAllBodiesSimulatePhysics(false);
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -87.f), FRotator(0.f, 270.f, 0.f));
 	GetMesh()->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	GetMesh()->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 }

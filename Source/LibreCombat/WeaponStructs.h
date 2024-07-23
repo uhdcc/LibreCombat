@@ -5,6 +5,7 @@
 class AWeapon;
 class UNiagaraSystem;
 
+
 USTRUCT(BlueprintType)
 struct FDamageParameters {
 	GENERATED_BODY()
@@ -26,6 +27,8 @@ USTRUCT(BlueprintType)
 struct FWeaponHudParameters {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	AWeapon* Weapon;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText WeaponName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UTexture2D* ReticleTexture;
@@ -33,6 +36,7 @@ struct FWeaponHudParameters {
 	FVector2D ReticleSize;
 
 	FWeaponHudParameters() {
+		Weapon = nullptr;
 		WeaponName = FText();
 		ReticleTexture = nullptr;
 		ReticleSize = FVector2D(40.f);
@@ -45,14 +49,20 @@ struct FWeaponSequence {
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AWeapon* Weapon;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimationAsset* Animation;
+	UAnimationAsset* WeaponAnimation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UAnimationAsset* FirstPersonArmsAnimation;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USoundBase* WeaponSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AmmoUsed;
 
 	FWeaponSequence() {
 		Weapon = nullptr;
-		Animation = nullptr;
+		WeaponAnimation = nullptr;
+		FirstPersonArmsAnimation = nullptr;
 		WeaponSound = nullptr;
+		AmmoUsed = 0.f;
 	}
 };
 USTRUCT(BlueprintType)

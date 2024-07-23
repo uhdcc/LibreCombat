@@ -82,6 +82,10 @@
 		{
 			"Name": "Reflex",
 			"Enabled": true
+		},
+		{
+			"Name": "SkeletalReduction",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

@@ -14,14 +14,15 @@ AProjectile::AProjectile() {
 	ProjectileCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ProjectileCollision"));
 	RootComponent = ProjectileCollision;
 	ProjectileCollision->SetCollisionProfileName("BlockAllDynamic");
+	ProjectileCollision->SetSphereRadius(0.f);
 
-	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
-	Model->SetupAttachment(RootComponent);
-	Model->SetCollisionProfileName("NoCollision");
+	ProjectileModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileModel"));
+	ProjectileModel->SetupAttachment(RootComponent);
+	ProjectileModel->SetCollisionProfileName("NoCollision");
 
-	Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
-	Movement->OnProjectileBounce.AddDynamic(this, &AProjectile::Bounce);
-	Movement->OnProjectileStop.AddDynamic(this, &AProjectile::Stopped);
+	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->OnProjectileBounce.AddDynamic(this, &AProjectile::Bounce);
+	ProjectileMovement->OnProjectileStop.AddDynamic(this, &AProjectile::Stopped);
 
 	InitialLifeSpan = 15.f;
 	BounceSound = nullptr;
@@ -39,7 +40,7 @@ void AProjectile::Bounce(const FHitResult& ImpactResult, const FVector& ImpactVe
 	);
 }
 void AProjectile::Stopped(const FHitResult& ImpactResult) {
-	if (!Movement->bShouldBounce) {
+	if (!ProjectileMovement->bShouldBounce) {
 		Explode();
 	}
 	else if (auto World = GetWorld()) {
@@ -85,10 +86,13 @@ void AProjectile::Explode() {
 			}
 		}
 		if (i.GetComponent()->IsSimulatingPhysics()) {
-			i.GetComponent()->AddImpulseAtLocation(
-				Impulse,
-				i.GetComponent()->GetComponentLocation()
+			i.GetComponent()->AddImpulse(
+				Impulse
 			);
+			//i.GetComponent()->AddImpulseAtLocation(
+			//	Impulse,
+			//	i.GetComponent()->GetComponentLocation()
+			//);
 		}
 	}
 	UGameplayStatics::PlaySoundAtLocation(
@@ -127,7 +131,7 @@ void AProjectile::BeginPlay() {
 			[=]() {
 				SetActorHiddenInGame(false);
 			},
-			Movement->InitialSpeed / 3000.f * 0.05f,
+			ProjectileMovement->InitialSpeed / 3000.f * 0.05f,
 			false
 			);
 	}

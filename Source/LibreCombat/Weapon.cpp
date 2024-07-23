@@ -23,16 +23,94 @@ AWeapon::AWeapon()
 	ThirdPersonMesh->SetCanEverAffectNavigation(false);
 	ThirdPersonMesh->SetIsReplicated(true);
 
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
-	FirstPersonMesh->SetupAttachment(RootComponent);
-	FirstPersonMesh->bOnlyOwnerSee = true;
-	FirstPersonMesh->CastShadow = false;
-	FirstPersonMesh->SetIsReplicated(true);
+	//FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
+	//FirstPersonMesh->SetupAttachment(RootComponent);
+	//FirstPersonMesh->bOnlyOwnerSee = true;
+	//FirstPersonMesh->CastShadow = false;
+	//FirstPersonMesh->SetIsReplicated(true);
 
 	PrimaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("PrimaryFire"));
 	SecondaryFire = CreateDefaultSubobject<UButtonComponent>(TEXT("SecondaryFire"));
+	Reload = CreateDefaultSubobject<UButtonComponent>(TEXT("Reload"));
+	Reload->CooldownDuration = 0.f;
+	Reload->ButtonEvent.AddDynamic(this, &AWeapon::OnReloadButtonEvent);
 
 	bIsEquipped = false;
+	ReloadDuration = 0.f;
+	bIsReloading = false;
+	bOutOfAmmo = false;
+}
+void AWeapon::SubtractAmmo(float SubtractionAmount) {
+	Ammo.Magazine -= SubtractionAmount;
+	if (Ammo.Magazine <= 0.f) {
+		if (Ammo.Bandolier <= 0.f) {
+			bOutOfAmmo = true;
+		}
+		else {
+			StartReloadingAmmo();
+		}
+	}
+	if (HUD2) {
+		HUD2->SetAmmo(Ammo.Magazine, Ammo.Bandolier);
+	}
+}
+void AWeapon::StartReloadingAmmo() {
+	if (ReloadDuration > 0.f) {
+		if (!bIsReloading && (Ammo.Magazine < Ammo.MagazineCapacity)) {
+			if (auto World = GetWorld()) {
+				bIsReloading = true;
+				World->GetTimerManager().SetTimer(
+					ReloadTimer,
+					this, &AWeapon::FinishReloadingAmmo,
+					ReloadDuration,
+					false
+				);
+			}
+		}
+	}
+	else {
+		FinishReloadingAmmo();
+	}
+}
+void AWeapon::OnReloadButtonEvent_Implementation(UButtonComponent* Button) {
+		StartReloadingAmmo();
+}
+void AWeapon::FinishReloadingAmmo() {
+	float AmmoNeeded = Ammo.MagazineCapacity - Ammo.Magazine;
+	if (Ammo.Bandolier > AmmoNeeded) {
+		Ammo.Magazine = Ammo.MagazineCapacity;
+		Ammo.Bandolier -= AmmoNeeded;
+	}
+	else {
+		Ammo.Magazine = Ammo.Bandolier;
+		Ammo.Bandolier = 0.f;
+	}
+	if (HUD2) {
+		HUD2->SetAmmo(Ammo.Magazine, Ammo.Bandolier);
+	}
+	bIsReloading = false;
+}
+void AWeapon::Equip_Implementation() {
+	ThirdPersonMesh->SetVisibility(true);
+	//FirstPersonMesh->SetVisibility(true);
+	bIsEquipped = true;
+	for (auto i : Buttons) {
+		i->bIsEquipped = true;
+		if (i->bButtonIsHeld) {
+			i->Action(true);
+		}
+	}
+	if (HUD2) {
+		HUD2->OnEquipWeapon(HudParameters);
+	}
+}
+void AWeapon::Unequip_Implementation() {
+	ThirdPersonMesh->SetVisibility(false);
+	//FirstPersonMesh->SetVisibility(false);
+	bIsEquipped = false;
+	for (auto i : Buttons) {
+		i->bIsEquipped = false;
+	}
 }
 UButtonComponent::UButtonComponent() {
 	CooldownDuration = 0.3f;
@@ -70,25 +148,11 @@ void UButtonComponent::Action(bool bButtonWasPressed) {
 		}
 	}
 }
-void AWeapon::Equip_Implementation() {
-	ThirdPersonMesh->SetVisibility(true);
-	FirstPersonMesh->SetVisibility(true);
-	bIsEquipped = true;
-	for (auto i : Buttons) {
-		i->bIsEquipped = true;
-		if (i->bButtonIsHeld) {
-			i->Action(true);
-		}
-	}
-	if (Hud2) {
-		Hud2->OnEquipWeapon(HudParameters);
-	}
-}
-void AWeapon::Unequip_Implementation() {
-	ThirdPersonMesh->SetVisibility(false);
-	FirstPersonMesh->SetVisibility(false);
-	bIsEquipped = false;
-	for (auto i : Buttons) {
-		i->bIsEquipped = false;
-	}
+FAmmo::FAmmo() {
+	Magazine = 0.f;
+	Bandolier = 0.f;
+	InitialMagazine = 0.f;
+	InitialBandolier = 0.f;
+	MagazineCapacity = 0.f;
+	BandolierCapacity = 0.f;
 }

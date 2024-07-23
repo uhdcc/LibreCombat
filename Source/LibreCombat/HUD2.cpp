@@ -6,18 +6,15 @@
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SSpacer.h"
+#include "Weapon.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
-void SWeaponList::Construct(const FArguments& InArgs) {
+void SWeaponListWidget::Construct(const FArguments& InArgs) {
 	ChildSlot
 		[
 			SAssignNew(VerticalBox, SVerticalBox)
 		];
 }
-//void SWeaponList::Highlight() {
-//}
-//void SWeaponList::Unhighlight() {
-//}
 void AHUD2::AddWeaponToList(FWeaponHudParameters Parameters) {
 	WeaponList->VerticalBox->AddSlot()
 		[
@@ -45,7 +42,15 @@ void AHUD2::OnEquipWeapon(FWeaponHudParameters Parameters) {
 	// change reticle
 	SetReticleImage(Parameters.ReticleTexture, Parameters.ReticleSize);
 	// update ammo
-
+	if (Parameters.Weapon) {
+		if (Parameters.Weapon->bHasAmmo) {
+			AmmoWidget->SetVisibility(EVisibility::Visible);
+			SetAmmo(Parameters.Weapon->Ammo.Magazine, Parameters.Weapon->Ammo.Bandolier);
+		}
+		else {
+			AmmoWidget->SetVisibility(EVisibility::Hidden);
+		}
+	}
 	// change picture
 
 	// highlight name on list
@@ -64,14 +69,14 @@ void AHUD2::OnEquipWeapon(FWeaponHudParameters Parameters) {
 		}
 	}
 }
-void SReticle::Construct(const FArguments& InArgs) {
+void SReticleWidget::Construct(const FArguments& InArgs) {
 	ReticleSlateBrush = MakeShareable(new FSlateBrush(*FCoreStyle::Get().GetBrush("GenericWhiteBoxBrush")));
 	ReticleSlateBrush->Tiling = ESlateBrushTileType::NoTile;
 	ChildSlot
-		[
-			SAssignNew(ReticleImage, SImage)
-				.Image(ReticleSlateBrush.Get())
-		];
+	[
+		SAssignNew(ReticleImage, SImage)
+			.Image(ReticleSlateBrush.Get())
+	];
 }
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void AHUD2::BeginPlay() {
@@ -89,14 +94,14 @@ void AHUD2::PostInitializeComponents() {
 		.Alignment(FVector2D(0.5f))
 		.AutoSize(true)
 		[
-			SAssignNew(Reticle, SReticle)
+			SAssignNew(Reticle, SReticleWidget)
 		];
 	PlayerSlateHud->AddSlot()
 		.Anchors(FAnchors(1.f, 0.5f, 1.f, 0.5f))
 		.Alignment(FVector2D(1.f, 0.5f))
 		.AutoSize(true)
 		[
-			SAssignNew(WeaponList, SWeaponList)
+			SAssignNew(WeaponList, SWeaponListWidget)
 		];
 
 	NumberFormat.SetMaximumFractionalDigits(0);
@@ -105,7 +110,14 @@ void AHUD2::PostInitializeComponents() {
 		.Alignment(FVector2D(0.5f, 1.f))
 		.AutoSize(true)
 		[
-			SAssignNew(HealthShield, SHealthShield)
+			SAssignNew(HealthShield, SHealthWidget)
+		];
+	PlayerSlateHud->AddSlot()
+		.Anchors(FAnchors(0.f, 0.f, 0.f, 0.f))
+		.Alignment(FVector2D(0.f, 0.f))
+		.AutoSize(true)
+		[
+			SAssignNew(AmmoWidget, SAmmoWidget)
 		];
 }
 void AHUD2::SetReticleImage(UObject* NewImage, FVector2D NewSize) {
@@ -115,13 +127,13 @@ void AHUD2::SetReticleImage(UObject* NewImage, FVector2D NewSize) {
 		Reticle->ReticleImage->SetImage(Reticle->ReticleSlateBrush.Get());
 	}
 }
-void SHealthShield::Construct(const FArguments& InArgs) {
+void SHealthWidget::Construct(const FArguments& InArgs) {
 	FSlateFontInfo BigHudFont = FCoreStyle::GetDefaultFontStyle("Bold", 70);
 	BigHudFont.OutlineSettings.OutlineSize = 2;
 	ChildSlot
 		[
 			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
+				+ SHorizontalBox::Slot()				
 				.AutoWidth()
 				[
 					SAssignNew(Health, STextBlock)
@@ -146,8 +158,6 @@ void SHealthShield::Construct(const FArguments& InArgs) {
 void AHUD2::SetHealth(float NewHealth) {
 	float Alpha = InitialHealth * 0.1f;
 	Alpha =(NewHealth - Alpha) / (InitialHealth - Alpha);
-
-	//float Alpha = (NewHealth - 20.f) / (InitialHealth - 20.f);
 	FLinearColor NewColor = FMath::Lerp(FLinearColor::Red, FLinearColor::Green, Alpha);
 	HealthShield->Health->SetText(FText::AsNumber(NewHealth, &NumberFormat));
 	HealthShield->Health->SetColorAndOpacity(NewColor);
@@ -155,9 +165,45 @@ void AHUD2::SetHealth(float NewHealth) {
 void AHUD2::SetShield(float NewShield) {
 	float Alpha = InitialShield * 0.1f;
 	Alpha = (NewShield - Alpha) / (InitialShield - Alpha);
-
-	//float Alpha = (NewShield - 20.f) / (InitialShield - 20.f);
 	FLinearColor NewColor = FMath::Lerp(FLinearColor::Red, FLinearColor::Blue, Alpha);
 	HealthShield->Shield->SetText(FText::AsNumber(NewShield, &NumberFormat));
 	HealthShield->Shield->SetColorAndOpacity(NewColor);
+}
+void AHUD2::SetAmmo(float NewMagazine, float NewBandolier) {
+	AmmoWidget->Magazine->SetText(FText::AsNumber(NewMagazine, &NumberFormat));
+	AmmoWidget->Bandolier->SetText(FText::AsNumber(NewBandolier, &NumberFormat));
+}
+void SAmmoWidget::Construct(const FArguments& InArgs) {
+	FSlateFontInfo BigHudFont = FCoreStyle::GetDefaultFontStyle("Bold", 30);
+	BigHudFont.OutlineSettings.OutlineSize = 2;
+	FSlateFontInfo BigHudFont2 = FCoreStyle::GetDefaultFontStyle("Bold", 40);
+	BigHudFont.OutlineSettings.OutlineSize = 2;
+	ChildSlot
+	[
+		SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(Magazine, STextBlock)
+					.Text(FText::FromString("99"))
+					.Font(BigHudFont)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+					.Text(FText::FromString("/"))
+					.Font(BigHudFont2)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(Bandolier, STextBlock)
+					.Text(FText::FromString("999"))
+					.Font(BigHudFont)
+			]
+	];
 }

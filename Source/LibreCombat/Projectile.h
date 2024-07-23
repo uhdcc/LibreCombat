@@ -20,9 +20,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* ProjectileCollision;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStaticMeshComponent* Model;
+	UStaticMeshComponent* ProjectileModel;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UProjectileMovementComponent* Movement;	
+	UProjectileMovementComponent* ProjectileMovement;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USoundBase* BounceSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

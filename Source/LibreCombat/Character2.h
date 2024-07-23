@@ -19,11 +19,16 @@ public:
 	ACharacter2(const FObjectInitializer& ObjectInitializer);
 	virtual void BeginPlay() override;
 	virtual void RecalculateBaseEyeHeight() override;
+	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult);
+	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime = 0.f);
 
 	UFUNCTION(BlueprintCallable)
 	void Ragdoll();
 	UFUNCTION(BlueprintCallable)
 	void ReverseRagdoll();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USceneComponent* Eyes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UCharacterMovementComponent2* CharacterMovement2;
@@ -36,4 +41,7 @@ public:
 	void MoveToRandomPoint(EPathFollowingResult::Type MovementResult);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bDontMove;
+
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* FirstPersonMesh;
 };

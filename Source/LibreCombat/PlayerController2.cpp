@@ -9,7 +9,7 @@ APlayerController2::APlayerController2() {
 	bIsZooming = false;
 	FovGoal = 0.f;
 	InitialSensitivity = 0.f;
-	InitialFov = InitialFov;
+	InitialFov = 0.f;
 	ZoomedSensitivity = 1.0;
 	bIsZoomed = false;
 	ZoomTimer = 0.1f;

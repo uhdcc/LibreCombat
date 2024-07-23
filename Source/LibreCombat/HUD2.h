@@ -10,30 +10,35 @@
 
 class SConstraintCanvas;
 
-class LIBRECOMBAT_API SHealthShield : public SCompoundWidget {
+class LIBRECOMBAT_API SAmmoWidget : public SCompoundWidget {
 public:
-	SLATE_BEGIN_ARGS(SHealthShield) {}
+	SLATE_BEGIN_ARGS(SAmmoWidget) {}
 	SLATE_END_ARGS()
-
+	void Construct(const FArguments& InArgs);
+	TSharedPtr<SHorizontalBox> HorizontalBox;
+	TSharedPtr<STextBlock> Magazine;
+	TSharedPtr<STextBlock> Bandolier;
+};
+class LIBRECOMBAT_API SHealthWidget : public SCompoundWidget {
+public:
+	SLATE_BEGIN_ARGS(SHealthWidget) {}
+	SLATE_END_ARGS()
 	void Construct(const FArguments& InArgs);
 	TSharedPtr<SHorizontalBox> HorizontalBox;
 	TSharedPtr<STextBlock> Health;
 	TSharedPtr<STextBlock> Shield;
-
 };
-class LIBRECOMBAT_API SWeaponList : public SCompoundWidget {
+class LIBRECOMBAT_API SWeaponListWidget : public SCompoundWidget {
 public:
-	SLATE_BEGIN_ARGS(SWeaponList) {}
+	SLATE_BEGIN_ARGS(SWeaponListWidget) {}
 	SLATE_END_ARGS()
-
 	void Construct(const FArguments& InArgs);
 	TSharedPtr<SVerticalBox> VerticalBox;
 };
-class LIBRECOMBAT_API SReticle : public SCompoundWidget {
+class LIBRECOMBAT_API SReticleWidget : public SCompoundWidget {
 public:
-	SLATE_BEGIN_ARGS(SReticle) {}
+	SLATE_BEGIN_ARGS(SReticleWidget) {}
 	SLATE_END_ARGS()
-
 	void Construct(const FArguments& InArgs);
 	TSharedPtr<SImage> ReticleImage;
 	TSharedPtr<FSlateBrush> ReticleSlateBrush;
@@ -46,15 +51,12 @@ public:
 	float InitialShield;
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
-
 	TSharedPtr<SConstraintCanvas> PlayerSlateHud;
-	TSharedPtr<SReticle> Reticle;
-	TSharedPtr<SWeaponList> WeaponList;
-	TSharedPtr<SHealthShield> HealthShield;
+	TSharedPtr<SReticleWidget> Reticle;
+	TSharedPtr<SWeaponListWidget> WeaponList;
+	TSharedPtr<SHealthWidget> HealthShield;
 	FNumberFormattingOptions NumberFormat;
-
-
-
+	TSharedPtr<SAmmoWidget> AmmoWidget;
 	UFUNCTION(BlueprintCallable)
 	void SetReticleImage(UObject* NewImage, FVector2D NewSize);
 	UFUNCTION(BlueprintCallable)
@@ -67,4 +69,6 @@ public:
 	void SetHealth(float NewHealth);
 	UFUNCTION(BlueprintCallable)
 	void SetShield(float NewShield);
+	UFUNCTION(BlueprintCallable)
+	void SetAmmo(float NewMagazine, float NewBandolier);
 };
