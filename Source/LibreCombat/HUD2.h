@@ -10,6 +10,13 @@
 
 class SConstraintCanvas;
 
+class LIBRECOMBAT_API SClockWidget : public SCompoundWidget {
+public:
+	SLATE_BEGIN_ARGS(SClockWidget) {}
+	SLATE_END_ARGS()
+	void Construct(const FArguments& InArgs);
+	TSharedPtr<STextBlock> ClockText;
+};
 class LIBRECOMBAT_API SAmmoWidget : public SCompoundWidget {
 public:
 	SLATE_BEGIN_ARGS(SAmmoWidget) {}
@@ -57,6 +64,7 @@ public:
 	TSharedPtr<SHealthWidget> HealthShield;
 	FNumberFormattingOptions NumberFormat;
 	TSharedPtr<SAmmoWidget> AmmoWidget;
+	TSharedPtr<SClockWidget> ClockWidget;
 	UFUNCTION(BlueprintCallable)
 	void SetReticleImage(UObject* NewImage, FVector2D NewSize);
 	UFUNCTION(BlueprintCallable)
@@ -71,4 +79,6 @@ public:
 	void SetShield(float NewShield);
 	UFUNCTION(BlueprintCallable)
 	void SetAmmo(float NewMagazine, float NewBandolier);
+	UFUNCTION(BlueprintCallable)
+	void SetTime(float NewTime);
 };

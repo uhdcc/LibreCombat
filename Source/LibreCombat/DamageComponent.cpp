@@ -9,6 +9,10 @@
 #include "GameFramework/GameStateBase.h"
 #include "HUD2.h"
 #include "Character2.h"
+#include "GameFramework/PlayerStart.h"
+
+#include "EngineUtils.h"
+#include "NavMesh/RecastNavMesh.h"
 
 UDamageComponent::UDamageComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -75,6 +79,33 @@ LOOP:
 		RechargeParams.RechargeTimestamp = GetTimestamp() + RechargeParams.RechargeDelay;
 		StartRecharging(RechargeParams);
 	}
+	if (bActorIsDead) {
+		StopRecharging();
+		if (GetOwner()->GetInstigatorController()) GetOwner()->GetInstigatorController()->StopMovement();
+
+		if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
+			CharacterMovement->StopActiveMovement();
+			CharacterMovement->StopMovementImmediately();
+			CharacterMovement->DisableMovement();
+		}
+		if (auto Character2 = Cast<ACharacter2>(GetOwner())) {
+			Character2->Ragdoll();
+		}
+		else {
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
+			GetOwner()->SetActorEnableCollision(false);
+			GetOwner()->SetActorTickEnabled(false);
+			GetOwner()->SetActorHiddenInGame(true);
+		}
+		if (auto World = GetWorld()) {
+			World->GetTimerManager().SetTimer(
+				RespawnTimer,
+				this, &UDamageComponent::Respawn,
+				2.f,
+				false
+			);
+		}
+	}
 }
 void UDamageComponent::Respawn() {
 	SetHealth(InitialHealth);
@@ -85,7 +116,32 @@ void UDamageComponent::Respawn() {
 	GetOwner()->SetActorEnableCollision(true);
 	GetOwner()->SetActorTickEnabled(true);
 	GetOwner()->SetActorHiddenInGame(false);
-	GetOwner()->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+
+	FVector SpawnPoint = FVector::ZeroVector;
+	float SpawnRotation = 0.f;
+
+	if (auto World = GetWorld()) {
+		TArray<APlayerStart*> PlayerStarts;
+		for (TActorIterator<APlayerStart> i(World); i; ++i) {
+			PlayerStarts.Add(*i);
+		}
+		if (PlayerStarts.IsValidIndex(0)) {
+			auto RandomIndex = FMath::RandRange(0, PlayerStarts.Num() - 1);
+			TArray<UPrimitiveComponent*> OverlappingComponents;
+			PlayerStarts[RandomIndex]->GetOverlappingComponents(OverlappingComponents);
+			SpawnPoint = PlayerStarts[RandomIndex]->GetActorLocation();
+			SpawnRotation = PlayerStarts[RandomIndex]->GetActorRotation().Yaw;
+		}
+		else {
+			for (TActorIterator<ARecastNavMesh> i(World); i; ++i) {
+				SpawnPoint = i->GetRandomPoint().Location + FVector(0.f, 0.f, 100.f);
+				SpawnRotation = FMath::RandRange(0.f, 360.f);
+				break;
+			}
+		}
+	}
+	GetOwner()->SetActorLocationAndRotation(SpawnPoint, FRotator(0.f, SpawnRotation, 0.f));
+
 	if (auto Character2 = Cast<ACharacter2>(GetOwner())) {
 		Character2->ReverseRagdoll();
 	}
@@ -98,29 +154,31 @@ void UDamageComponent::BeginPlay() {
 	if (GetOwner() && GetOwner()->GetInstigatorController()) {
 		if (auto PlayerController = Cast<APlayerController>(GetOwner()->GetInstigatorController())) {
 			HUD2 = Cast<AHUD2>(PlayerController->GetHUD());
+			HUD2->InitialHealth = InitialHealth;
+			HUD2->InitialShield = InitialShield;
 		}
 	}
-	if (HUD2) HUD2->InitialHealth = InitialHealth;
-	if (HUD2) HUD2->InitialShield = InitialShield;
 	SetHealth(InitialHealth);
 	SetShield(InitialShield);
 }
 void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	if (bActorIsDead && !bPostDeathHasBeenTicked) {
 		StopRecharging();
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
-		GetOwner()->SetActorEnableCollision(false);
-		GetOwner()->SetActorTickEnabled(false);
-		GetOwner()->SetActorHiddenInGame(true);
+		if(GetOwner()->GetInstigatorController()) GetOwner()->GetInstigatorController()->StopMovement();
+
 		if (auto CharacterMovement = GetOwner()->FindComponentByClass<UCharacterMovementComponent>()) {
 			CharacterMovement->StopActiveMovement();
 			CharacterMovement->StopMovementImmediately();
 			CharacterMovement->DisableMovement();
 		}
 		if (auto Character2 = Cast<ACharacter2>(GetOwner())) {
-			GetOwner()->SetActorEnableCollision(true);
-			GetOwner()->SetActorHiddenInGame(false);
 			Character2->Ragdoll();
+		}
+		else {
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathEffect, GetOwner()->GetActorLocation());
+			GetOwner()->SetActorEnableCollision(false);
+			GetOwner()->SetActorTickEnabled(false);
+			GetOwner()->SetActorHiddenInGame(true);
 		}
 		if (auto World = GetWorld()) {
 			World->GetTimerManager().SetTimer(
@@ -132,14 +190,16 @@ void UDamageComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 		}
 		bPostDeathHasBeenTicked = true;
 	}
-	else if (bShieldIsRecharging) {
-		ElapsedRechargeTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds() - CurrentRecharge.RechargeTimestamp;
-		if (ElapsedRechargeTime > 0) {
-			SetShield(RechargeStartingShield + ElapsedRechargeTime * CurrentRecharge.RechargeRate);
-			if (Shield > CurrentRecharge.RechargeGoal) {
-				StopRecharging();
-				SetShield(CurrentRecharge.RechargeGoal);
-				bShieldIsBroken = false;
+	else {
+		if (bShieldIsRecharging) {
+			ElapsedRechargeTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds() - CurrentRecharge.RechargeTimestamp;
+			if (ElapsedRechargeTime > 0) {
+				SetShield(RechargeStartingShield + ElapsedRechargeTime * CurrentRecharge.RechargeRate);
+				if (Shield > CurrentRecharge.RechargeGoal) {
+					StopRecharging();
+					SetShield(CurrentRecharge.RechargeGoal);
+					bShieldIsBroken = false;
+				}
 			}
 		}
 	}

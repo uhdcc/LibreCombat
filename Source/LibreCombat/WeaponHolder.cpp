@@ -158,7 +158,7 @@ void UWeaponHolder::DropPickup(TSubclassOf<APickup> PickupClass, AActor* PickupO
 }
 
 int UWeaponHolder::AddWeapon(AWeapon* NewWeapon) {
-	if (!bWeaponSwitchingHasBeenBinded) {
+	if (!bWeaponSwitchingHasBeenBinded && GetOwner()->InputComponent) {
 		GetOwner()->InputComponent->BindAction<TDelegate<void(bool)>>("NextWeapon", IE_Pressed, this, &UWeaponHolder::CycleWeapon, true);
 		GetOwner()->InputComponent->BindAction<TDelegate<void(bool)>>("PreviousWeapon", IE_Pressed, this, &UWeaponHolder::CycleWeapon, false);
 		bWeaponSwitchingHasBeenBinded = true;

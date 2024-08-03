@@ -40,7 +40,6 @@ public:
 
 	virtual bool ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam, int32& OutResult) override;
 	void SetMouseSensitivity(double MouseDpi, double CentimetersPer360);
-	void SetZoomedSensitivity(double MouseDpi, double CentimetersPer360);
 
 	double MouseSensitivity;
 	double ZoomedSensitivity;

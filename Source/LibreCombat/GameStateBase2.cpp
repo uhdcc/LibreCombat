@@ -21,6 +21,11 @@ void AGameStateBase2::HandleBeginPlay() {
 			SoftWeaponClasses,
 			FStreamableDelegate::CreateUObject(this, &AGameStateBase2::AllPickupsLoaded)
 		);
+
+		for (TActorIterator<AHUD2> i(World); i; ++i) {			
+			Huds.Add(*i);
+		}
+
 	}
 
 	UAssetManager& AssetManager = UAssetManager::Get();
@@ -33,8 +38,18 @@ void AGameStateBase2::HandleBeginPlay() {
 void AGameStateBase2::OnRep_ReplicatedHasBegunPlay() {
 	Super::OnRep_ReplicatedHasBegunPlay();
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#if WITH_EDITOR
+void AGameStateBase2::OnRep_ReplicatedWorldTimeSeconds() {
+	Super::OnRep_ReplicatedWorldTimeSeconds();
+	for (auto& i : Huds) {
+		i->SetTime(ReplicatedWorldTimeSeconds);
+	}
+}
+void AGameStateBase2::UpdateServerTimeSeconds() {
+	Super::UpdateServerTimeSeconds();
+	for (auto& i : Huds) {
+		i->SetTime(ReplicatedWorldTimeSeconds);
+	}
+}
 void AGameStateBase2::AllWeaponsLoaded() {
 	UAssetManager& AssetManager = UAssetManager::Get();
 	TArray<UObject*> ClassObjects;
@@ -43,12 +58,19 @@ void AGameStateBase2::AllWeaponsLoaded() {
 	for (auto i : ClassObjects) {
 		WeaponClasses.Add(Cast<UClass>(i));
 	}
-	for (auto Player : PlayerArray) {
-		for (auto WeaponClass : WeaponClasses) {
-			UWeaponFunctionLibrary::GiveWeapon(WeaponClass, Player->GetPawn());
+	//for (auto Player : PlayerArray) {
+	//	for (auto WeaponClass : WeaponClasses) {
+	//		UWeaponFunctionLibrary::GiveWeapon(WeaponClass, Player->GetPawn());
+	//	}
+	//}
+	if (auto World = GetWorld()) {
+		for (TActorIterator<APawn> i(World); i; ++i) {
+			UWeaponFunctionLibrary::GiveWeapon(WeaponClasses[0], *i);
+			//for (auto WeaponClass : WeaponClasses) {
+			//	UWeaponFunctionLibrary::GiveWeapon(WeaponClass, *i);
+			//}
 		}
 	}
 }
 void AGameStateBase2::AllPickupsLoaded() {
 }
-#endif

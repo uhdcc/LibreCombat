@@ -24,15 +24,13 @@ void APlayerController2::BeginPlay() {
 		PlayerCameraManager->bDefaultConstrainAspectRatio = true;
 		PlayerCameraManager->DefaultAspectRatio = 1.777777f;
 
-		//SetMouseSensitivity(50.0, InitialSensitivity);
+		//SetMouseSensitivity(250.0, InitialSensitivity);
 		SetMouseSensitivity(800.0, InitialSensitivity);
-		//SetMouseSensitivity(800.0, 20);
+		//SetMouseSensitivity(13000.0, InitialSensitivity);
 		//SetMouseSensitivity(26000.0, InitialSensitivity);
-		SetZoomedSensitivity(800.0, InitialSensitivity / 2.0);
 
 		MouseRotationX = ControlRotation.Yaw / MouseSensitivity;
 		MouseRotationY = ControlRotation.Pitch / MouseSensitivity;
-
 	}
 }
 void APlayerController2::SetupInputComponent() {
@@ -93,14 +91,11 @@ void APlayerController2::Zoom(float NewFov, float NewSensitivity) {
 	FovGoal = NewFov;
 	ZoomTimer = 0.1f;
 	bIsZooming = true;
-
-	ZoomedSensitivity = 360.0 / 800.0 / NewSensitivity * 2.54;
 	bIsZoomed = true;
 }
 void APlayerController2::UnZoom() {
 	FovGoal = InitialFov;
 	bIsZooming = true;
-
 	bIsZoomed = false;
 }
 bool APlayerController2::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam, int32& OutResult) {
@@ -163,12 +158,10 @@ bool APlayerController2::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LP
 
 void APlayerController2::SetMouseSensitivity(double MouseDpi, double CentimetersPer360) {
 	MouseSensitivity = 360.0 / MouseDpi / CentimetersPer360 * 2.54;
+	ZoomedSensitivity = MouseSensitivity * 0.5;
+
 	//MouseSensitivityRadians = MouseSensitivity * DegreesToRadians;
 	//InputYawScale = MouseSensitivity;
 	//InputPitchScale = MouseSensitivity;
 
-}
-
-void APlayerController2::SetZoomedSensitivity(double MouseDpi, double CentimetersPer360) {
-	ZoomedSensitivity = 360.0 / MouseDpi / CentimetersPer360 * 2.54;
 }

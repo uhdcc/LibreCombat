@@ -56,10 +56,14 @@ void APickup::Respawn() {
 
 void AWeaponPickup::OnConstruction(const FTransform& Transform) {
 	Super::OnConstruction(Transform);
-	if (!PickupModel->SkeletalMesh && WeaponClass) {
+	if (PickupModel && !PickupModel->SkeletalMesh && WeaponClass.IsValid()) {
 		auto TempWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass.Get());
-		PickupModel->SetSkeletalMesh(TempWeapon->FirstPersonMesh->SkeletalMesh);
-		TempWeapon->Destroy();
+		if (TempWeapon) {
+			if (TempWeapon->ThirdPersonMesh && TempWeapon->ThirdPersonMesh->SkeletalMesh) {
+				PickupModel->SetSkeletalMesh(TempWeapon->ThirdPersonMesh->SkeletalMesh);
+			}
+			TempWeapon->Destroy();
+		}
 	}
 }
 

@@ -63,36 +63,36 @@ void AProjectile::Explode() {
 		FCollisionShape::MakeSphere(ExplosionRadius)
 	);
 	for (auto& i : Overlaps) {
-		auto NormalizedDistance = (i.Component->GetComponentLocation() - GetActorLocation()).Size() / ExplosionRadius;
-		NormalizedDistance = fminf(NormalizedDistance, 1.f);
-		NormalizedDistance = (1.f - NormalizedDistance);
-		auto Impulse = ((i.Component->GetComponentLocation() - GetActorLocation()).GetSafeNormal()) * ExplosionForce * NormalizedDistance;
-		if (i.Actor.IsValid()) {
-			if (GetOwner() && i.GetActor() != GetOwner()->GetOwner() && i.Actor != GetOwner()) {
-				if (auto VictimDamageComponent = i.Actor->FindComponentByClass<UDamageComponent>()) {
-					FDamageParameters DamageParams;
-					DamageParams.Damage = ExplosionDamage * NormalizedDistance;
-					DamageParams.bBleedthrough = true;
-					VictimDamageComponent->ReceiveDamage(DamageParams);
-					UGameplayStatics::PlaySound2D(this, HitSound);
+		if (i.Component->GetCollisionResponseToChannel(ECC_Visibility) == ECollisionResponse::ECR_Block) {
+			FVector TestLocation;
+			FRotator TestRotation;
+			if (i.Actor.IsValid()) i.Actor->GetActorEyesViewPoint(TestLocation, TestRotation);
+			else TestLocation = i.Component->GetComponentLocation();
+
+			auto NormalizedDistance = (TestLocation - GetActorLocation()).Size() / ExplosionRadius;
+			NormalizedDistance = fminf(NormalizedDistance, 1.f);
+			NormalizedDistance = (1.f - NormalizedDistance);
+			auto Impulse = ((TestLocation - GetActorLocation()).GetSafeNormal()) * ExplosionForce * NormalizedDistance;
+			if (i.Actor.IsValid()) {
+				if (GetOwner() && i.GetActor() != GetOwner()->GetOwner() && i.Actor != GetOwner()) {
+					if (auto VictimDamageComponent = i.Actor->FindComponentByClass<UDamageComponent>()) {
+						FDamageParameters DamageParams;
+						DamageParams.Damage = ExplosionDamage * NormalizedDistance;
+						DamageParams.bBleedthrough = true;
+						VictimDamageComponent->ReceiveDamage(DamageParams);
+						UGameplayStatics::PlaySound2D(this, HitSound);
+					}
+				}
+				if (auto CharacterMovement = i.Actor->FindComponentByClass<UCharacterMovementComponent>()) {
+					CharacterMovement->AddImpulse(Impulse);
 				}
 			}
-			if (auto CharacterMovement = i.Actor->FindComponentByClass<UCharacterMovementComponent>()) {
-				FVector Eyes;
-				FRotator fefe;
-				i.Actor->GetActorEyesViewPoint(Eyes, fefe);
-				Impulse = ((Eyes - GetActorLocation()).GetSafeNormal()) * ExplosionForce * NormalizedDistance;
-				CharacterMovement->AddImpulse(Impulse);
+			if (i.Component->IsSimulatingPhysics()) {
+				i.Component->AddImpulseAtLocation(
+					Impulse,
+					TestLocation
+				);
 			}
-		}
-		if (i.GetComponent()->IsSimulatingPhysics()) {
-			i.GetComponent()->AddImpulse(
-				Impulse
-			);
-			//i.GetComponent()->AddImpulseAtLocation(
-			//	Impulse,
-			//	i.GetComponent()->GetComponentLocation()
-			//);
 		}
 	}
 	UGameplayStatics::PlaySoundAtLocation(

@@ -43,11 +43,13 @@ ACharacter2::ACharacter2(const FObjectInitializer& ObjectInitializer)
 	WeaponHolder = CreateDefaultSubobject<UWeaponHolder>(TEXT("WeaponHolder"));
 
 	bDontMove = false;
+	bUseControlRotation = true;
 }
 void ACharacter2::BeginPlay() {
 	Super::BeginPlay();
 	if (!bDontMove && GetController()) {
 		if (Cast<AAIController>(GetController())) {
+			bUseControlRotation = false;
 			MoveToRandomPoint(EPathFollowingResult::Success);
 		}
 	}
@@ -73,12 +75,17 @@ void ACharacter2::RecalculateBaseEyeHeight() {
 	BaseEyeHeight = CharacterMovement2->CurrentCapsuleHeight - 20.f;
 }
 void ACharacter2::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) {
+	//Super::CalcCamera(DeltaTime, OutResult);
 	OutResult.Location = Eyes->GetComponentLocation();
 	OutResult.Rotation = Eyes->GetComponentRotation();
 }
 void ACharacter2::FaceRotation(FRotator NewControlRotation, float DeltaTime) {
-	SetActorRotation(FRotator(0.f, NewControlRotation.Yaw, 0.f));
-	Eyes->SetRelativeRotation(FRotator(NewControlRotation.Pitch, 0.f, 0.f));
+	//Super::FaceRotation(NewControlRotation, DeltaTime);
+
+	if (bUseControlRotation) {
+		SetActorRotation(FRotator(0.f, NewControlRotation.Yaw, 0.f));
+		Eyes->SetRelativeRotation(FRotator(NewControlRotation.Pitch, 0.f, 0.f));
+	}
 }
 void ACharacter2::Ragdoll() {
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));

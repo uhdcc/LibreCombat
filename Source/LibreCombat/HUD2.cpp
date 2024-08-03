@@ -7,6 +7,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Weapon.h"
+#include "Engine/CanvasRenderTarget2D.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SWeaponListWidget::Construct(const FArguments& InArgs) {
@@ -70,6 +71,8 @@ void AHUD2::OnEquipWeapon(FWeaponHudParameters Parameters) {
 	}
 }
 void SReticleWidget::Construct(const FArguments& InArgs) {
+
+
 	ReticleSlateBrush = MakeShareable(new FSlateBrush(*FCoreStyle::Get().GetBrush("GenericWhiteBoxBrush")));
 	ReticleSlateBrush->Tiling = ESlateBrushTileType::NoTile;
 	ChildSlot
@@ -81,9 +84,29 @@ void SReticleWidget::Construct(const FArguments& InArgs) {
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void AHUD2::BeginPlay() {
 	Super::BeginPlay();
+
+	if (auto World = GetWorld()) {
+		auto ReticleTexture = NewObject<UCanvasRenderTarget2D>();
+		ReticleTexture->bAutoGenerateMips = true;
+		ReticleTexture->InitAutoFormat(128, 128);
+		ReticleTexture->UpdateResourceImmediate(true);
+
+
+		//FCanvas* ReticleCanvas = new FCanvas(
+		//	ReticleTexture,
+		//	nullptr,
+		//	World,
+		//	World->FeatureLevel,
+		//	FCanvas::CDM_ImmediateDrawing);
+		//ReticleCanvas->Init(128, 128, nullptr, NewCanvas);
+		//ReticleCanvas->Update();
+
+	}
 }
 void AHUD2::PostInitializeComponents() {
 	Super::PostInitializeComponents();
+
+
 	GEngine->GameViewport->AddViewportWidgetForPlayer(
 		GetOwningPlayerController()->GetLocalPlayer(),
 		SAssignNew(PlayerSlateHud, SConstraintCanvas),
@@ -118,6 +141,13 @@ void AHUD2::PostInitializeComponents() {
 		.AutoSize(true)
 		[
 			SAssignNew(AmmoWidget, SAmmoWidget)
+		];
+	PlayerSlateHud->AddSlot()
+		.Anchors(FAnchors(0.f,1.f, 0.f, 1.f))
+		.Alignment(FVector2D(0.f, 1.f))
+		.AutoSize(true)
+		[
+			SAssignNew(ClockWidget, SClockWidget)
 		];
 }
 void AHUD2::SetReticleImage(UObject* NewImage, FVector2D NewSize) {
@@ -173,11 +203,14 @@ void AHUD2::SetAmmo(float NewMagazine, float NewBandolier) {
 	AmmoWidget->Magazine->SetText(FText::AsNumber(NewMagazine, &NumberFormat));
 	AmmoWidget->Bandolier->SetText(FText::AsNumber(NewBandolier, &NumberFormat));
 }
+void AHUD2::SetTime(float NewTime) {	
+	ClockWidget->ClockText->SetText(FText::AsTimespan(FTimespan::FromSeconds(NewTime)));
+}
 void SAmmoWidget::Construct(const FArguments& InArgs) {
 	FSlateFontInfo BigHudFont = FCoreStyle::GetDefaultFontStyle("Bold", 30);
 	BigHudFont.OutlineSettings.OutlineSize = 2;
 	FSlateFontInfo BigHudFont2 = FCoreStyle::GetDefaultFontStyle("Bold", 40);
-	BigHudFont.OutlineSettings.OutlineSize = 2;
+	BigHudFont2.OutlineSettings.OutlineSize = 2;
 	ChildSlot
 	[
 		SNew(SHorizontalBox)
@@ -206,4 +239,15 @@ void SAmmoWidget::Construct(const FArguments& InArgs) {
 					.Font(BigHudFont)
 			]
 	];
+}
+
+void SClockWidget::Construct(const FArguments& InArgs) {
+	FSlateFontInfo BigHudFont2 = FCoreStyle::GetDefaultFontStyle("Bold", 70);
+	BigHudFont2.OutlineSettings.OutlineSize = 2;
+	ChildSlot
+		[
+			SAssignNew(ClockText, STextBlock)
+				.Text(FText::FromString("999"))
+				.Font(BigHudFont2)
+		];
 }

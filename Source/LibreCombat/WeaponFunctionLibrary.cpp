@@ -229,7 +229,7 @@ void UWeaponFunctionLibrary::HandleHitscan(const FHitResult& Hit, const FHitscan
 	//	BeamStart = OwningWeapon->FirstPersonMesh->GetSocketLocation("Muzzle");
 	//}
 	//else {
-		BeamStart = HitParameters.Owner->GetActorLocation();
+		BeamStart = HitParameters.Owner->GetActorLocation() - FVector(0.f, 0.f, 10.f);
 //	}
 	auto NewBeam = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		HitParameters.Owner,

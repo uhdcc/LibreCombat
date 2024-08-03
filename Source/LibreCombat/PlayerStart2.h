@@ -3,15 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AIController.h"
-#include "AIController2.generated.h"
+#include "GameFramework/PlayerStart.h"
+#include "PlayerStart2.generated.h"
 
+/**
+ * 
+ */
 UCLASS()
-class LIBRECOMBAT_API AAIController2 : public AAIController {
+class LIBRECOMBAT_API APlayerStart2 : public APlayerStart
+{
 	GENERATED_BODY()
 public:
-	AAIController2();
-
 	virtual void BeginPlay() override;
 
 };

@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "HUD2.h"
+
 #include "GameStateBase2.generated.h"
+
+//class AHUD2;
 
 UCLASS()
 class LIBRECOMBAT_API AGameStateBase2 : public AGameStateBase {
@@ -12,9 +16,12 @@ class LIBRECOMBAT_API AGameStateBase2 : public AGameStateBase {
 public:
 	virtual void HandleBeginPlay() override;
 	virtual void OnRep_ReplicatedHasBegunPlay() override;
+	virtual void OnRep_ReplicatedWorldTimeSeconds() override;
+	virtual void UpdateServerTimeSeconds() override;
 
-#if WITH_EDITOR
 	void AllWeaponsLoaded();
-#endif
 	void AllPickupsLoaded();
+
+	UPROPERTY()
+	TArray<AHUD2*> Huds;
 };
