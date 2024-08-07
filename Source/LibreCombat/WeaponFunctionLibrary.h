@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "WeaponStructs.h"
+#include "HUD2.h"
+
 #include "WeaponFunctionLibrary.generated.h"
 
 UCLASS()

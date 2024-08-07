@@ -6,6 +6,8 @@
 #include "GameFramework/HUD.h"
 #include "Widgets/SCompoundWidget.h"
 #include "WeaponStructs.h"
+#include "Components/Widget.h"
+#include "SReticle.h"
 #include "HUD2.generated.h"
 
 class SConstraintCanvas;
@@ -42,14 +44,6 @@ public:
 	void Construct(const FArguments& InArgs);
 	TSharedPtr<SVerticalBox> VerticalBox;
 };
-class LIBRECOMBAT_API SReticleWidget : public SCompoundWidget {
-public:
-	SLATE_BEGIN_ARGS(SReticleWidget) {}
-	SLATE_END_ARGS()
-	void Construct(const FArguments& InArgs);
-	TSharedPtr<SImage> ReticleImage;
-	TSharedPtr<FSlateBrush> ReticleSlateBrush;
-};
 UCLASS()
 class LIBRECOMBAT_API AHUD2 : public AHUD {
 	GENERATED_BODY()
@@ -81,4 +75,7 @@ public:
 	void SetAmmo(float NewMagazine, float NewBandolier);
 	UFUNCTION(BlueprintCallable)
 	void SetTime(float NewTime);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UCanvasRenderTarget2D* ReticleTexture;
 };

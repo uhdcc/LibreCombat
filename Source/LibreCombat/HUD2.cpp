@@ -8,6 +8,8 @@
 #include "Widgets/Layout/SSpacer.h"
 #include "Weapon.h"
 #include "Engine/CanvasRenderTarget2D.h"
+#include "Engine/Canvas.h"
+
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SWeaponListWidget::Construct(const FArguments& InArgs) {
@@ -16,6 +18,7 @@ void SWeaponListWidget::Construct(const FArguments& InArgs) {
 			SAssignNew(VerticalBox, SVerticalBox)
 		];
 }
+END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void AHUD2::AddWeaponToList(FWeaponHudParameters Parameters) {
 	WeaponList->VerticalBox->AddSlot()
 		[
@@ -41,7 +44,7 @@ void AHUD2::RemoveWeaponFromList(FWeaponHudParameters Parameters) {
 }
 void AHUD2::OnEquipWeapon(FWeaponHudParameters Parameters) {
 	// change reticle
-	SetReticleImage(Parameters.ReticleTexture, Parameters.ReticleSize);
+	//SetReticleImage(Parameters.ReticleTexture, Parameters.ReticleSize);
 	// update ammo
 	if (Parameters.Weapon) {
 		if (Parameters.Weapon->bHasAmmo) {
@@ -70,42 +73,15 @@ void AHUD2::OnEquipWeapon(FWeaponHudParameters Parameters) {
 		}
 	}
 }
-void SReticleWidget::Construct(const FArguments& InArgs) {
-
-
-	ReticleSlateBrush = MakeShareable(new FSlateBrush(*FCoreStyle::Get().GetBrush("GenericWhiteBoxBrush")));
-	ReticleSlateBrush->Tiling = ESlateBrushTileType::NoTile;
-	ChildSlot
-	[
-		SAssignNew(ReticleImage, SImage)
-			.Image(ReticleSlateBrush.Get())
-	];
-}
-END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void AHUD2::BeginPlay() {
 	Super::BeginPlay();
 
-	if (auto World = GetWorld()) {
-		auto ReticleTexture = NewObject<UCanvasRenderTarget2D>();
-		ReticleTexture->bAutoGenerateMips = true;
-		ReticleTexture->InitAutoFormat(128, 128);
-		ReticleTexture->UpdateResourceImmediate(true);
-
-
-		//FCanvas* ReticleCanvas = new FCanvas(
-		//	ReticleTexture,
-		//	nullptr,
-		//	World,
-		//	World->FeatureLevel,
-		//	FCanvas::CDM_ImmediateDrawing);
-		//ReticleCanvas->Init(128, 128, nullptr, NewCanvas);
-		//ReticleCanvas->Update();
-
-	}
+	auto ReticleCanvas = NewObject<UCanvas>(this, "ReticleCanvas");
+	ReticleTexture = NewObject<UCanvasRenderTarget2D>(this, "ReticleTexture");
+	Reticle->DrawCrosshair(FCrossProperties(), ReticleCanvas, ReticleTexture);
 }
 void AHUD2::PostInitializeComponents() {
 	Super::PostInitializeComponents();
-
 
 	GEngine->GameViewport->AddViewportWidgetForPlayer(
 		GetOwningPlayerController()->GetLocalPlayer(),
@@ -240,7 +216,6 @@ void SAmmoWidget::Construct(const FArguments& InArgs) {
 			]
 	];
 }
-
 void SClockWidget::Construct(const FArguments& InArgs) {
 	FSlateFontInfo BigHudFont2 = FCoreStyle::GetDefaultFontStyle("Bold", 70);
 	BigHudFont2.OutlineSettings.OutlineSize = 2;

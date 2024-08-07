@@ -13,7 +13,6 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/MeshComponent.h"
 #include "WeaponHolder.h"
-#include "HUD2.h"
 #include "Character2.h"
 
 #include "DrawDebugHelpers.h"
